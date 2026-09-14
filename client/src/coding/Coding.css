@@ -445,13 +445,6 @@
 }
 .cd-search input:focus-visible, .cd-search select:focus-visible { outline: 2px solid var(--ss-focus); outline-offset: 2px; }
 
-.cd-session, .cd-saved { margin: 18px 0; display: flex; flex-direction: column; gap: 8px; }
-.cd-saved__heading { margin: 12px 0 0; font-size: 0.95rem; }
-.cd-saved__row { display: flex; flex-direction: column; gap: 2px; }
-.cd-collections { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.cd-collections li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.cd-collections__name { font-weight: 650; }
-.cd-collections__count { color: var(--color-text-secondary); font-size: 0.8rem; }
 .cd-skip-note {
   width: 100%;
   border: 1px solid var(--color-border);

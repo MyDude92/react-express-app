@@ -109,6 +109,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
   const checklist = task.verify === 'checklist';
 
   const [code, setCode] = useState<string>(initialCode ?? task.starter);
+  const [formattedCode, setFormattedCode] = useState<string>(task.starter);
   const [phase, setPhase] = useState<Phase>('idle');
   const [runPhase, setRunPhase] = useState<RunPhase | null>(null);
   const [run, setRun] = useState<RunOutcome | null>(null);
@@ -279,7 +280,9 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
 
   const format = useCallback(async () => {
     try {
-      setCode(await formatCode(code, task.track === 'system-design' ? 'javascript' : task.track));
+      const formatted = await formatCode(code, task.track === 'system-design' ? 'javascript' : task.track);
+      setCode(formatted);
+      setFormattedCode(formatted);
       setFormatError(null);
     } catch (error) {
       setFormatError(String((error as Error)?.message ?? error).split('\n')[0]);
@@ -308,6 +311,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
 
   const reset = useCallback(() => {
     setCode(task.starter);
+    setFormattedCode(task.starter);
     setRun(null);
     setStale(false);
     setHintsTaken(0);
@@ -356,6 +360,8 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
 
   const busy = phase !== 'idle';
   const submitDisabled = busy || !session || !online || Boolean(solution);
+  const formatDisabled = busy || code === formattedCode;
+  const resetDisabled = busy || (code === task.starter && taken === 0);
   const tierLabel = t(`coding.tier.${CODING_TIERS[task.tier]}` as never);
   const trackLabel = t(`coding.track.${task.track}` as never);
 
@@ -811,8 +817,8 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                 <button type="button" className="cd-btn cd-btn--primary" onClick={() => void submit()} disabled={submitDisabled}>
                   {phase === 'submitting' ? t('coding.submitting') : t('coding.submit')}
                 </button>
-                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={busy}>{t('coding.format')}</button>
-                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={busy}>{t('coding.reset')}</button>
+                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={formatDisabled}>{t('coding.format')}</button>
+                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={resetDisabled}>{t('coding.reset')}</button>
               </div>
               <div className="cd-actions cd-actions--utility">
                 <button

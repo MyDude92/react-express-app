@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '../../lib/api';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../lib/auth';
 import { readString, removeStored, writeString } from '../../lib/storage';
@@ -12,8 +11,7 @@ import { WaterlineProgress } from '../SharkFin';
 import { CodingWorkbench } from '../../coding/CodingWorkbench';
 import { DesignRunner } from '../../coding/DesignRunner';
 import { codingKeys, saveCodingDraft, useCodingProgress, useCodingTask } from '../../coding/api';
-import { useBookmarks, useSaveChallenge, usePracticeSession, useStartSession, useAdvanceSession } from '../../coding/practice';
-import { PRACTICE_SESSION_MINUTES } from '../../../../shared/coding-api';
+import { useBookmarks, useSaveChallenge } from '../../coding/practice';
 import { CODING_INDEX } from '../../../../shared/coding-index';
 import {
   CODING_SECTION_TRACKS,
@@ -145,169 +143,6 @@ function TaskRow({ task, status, saved, onSave, saving }: {
   );
 }
 
-
-/** A short session: pick how long you have, get a queue of work you can already
- * open. The scheduler is the existing one — review that is due comes first,
- * then new work — so this reorders practice rather than widening it. Times are
- * estimates and the panel says so. */
-function PracticeSessionPanel({ signedIn }: { signedIn: boolean }) {
-  const { t, lang } = useLanguage();
-  const session = usePracticeSession(signedIn);
-  const start = useStartSession();
-  const advance = useAdvanceSession();
-  const active = session.data?.session ?? null;
-  const [error, setError] = useState<string | null>(null);
-
-  if (!signedIn) return null;
-
-  const current = active && active.position < active.queue.length ? active.queue[active.position] : null;
-  const currentTask = current ? CODING_INDEX.find((task) => task.id === current) : null;
-
-  const begin = (minutes: (typeof PRACTICE_SESSION_MINUTES)[number]) => {
-    setError(null);
-    start.mutate({ minutes }, {
-      onError: (cause) => setError(cause instanceof ApiError && cause.code === 'nothing_eligible'
-        ? t('coding.session.nothing')
-        : t('coding.session.failed')),
-    });
-  };
-
-  return (
-    <section className="cd-session" aria-label={t('coding.session.title')}>
-      <Kicker as="h2">{t('coding.session.title')}</Kicker>
-      {active && currentTask ? (
-        <div className="cd-session__active">
-          <p>
-            {t('coding.session.progress', { done: active.position, total: active.queue.length })}
-            {' · '}
-            {t('coding.session.estimate', { n: active.estimatedMinutes })}
-          </p>
-          <div className="cd-actions">
-            <Link className="cd-btn cd-btn--primary" to={`/coding/${currentTask.track}/${currentTask.id}`}>
-              {t('coding.session.continue', { title: currentTask.title[lang] || currentTask.title.en })}
-            </Link>
-            <button
-              type="button"
-              className="cd-btn cd-btn--quiet"
-              disabled={advance.isPending}
-              onClick={() => advance.mutate({ sessionId: active.sessionId, status: 'abandoned' })}
-            >
-              {t('coding.session.end')}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="cd-actions">
-          {PRACTICE_SESSION_MINUTES.map((minutes) => (
-            <button key={minutes} type="button" className="cd-btn" disabled={start.isPending} onClick={() => begin(minutes)}>
-              {t('coding.session.start', { n: minutes })}
-            </button>
-          ))}
-        </div>
-      )}
-      <p className="cd-shortcuts">{t('coding.session.note')}</p>
-      {error && <p className="cd-note cd-note--error" role="alert">{error}</p>}
-    </section>
-  );
-}
-
-
-/** Saved challenges and the learner's own named lists.
- *
- * A saved item that is not open yet stays here with an explanation rather than
- * disappearing — the history is theirs — and the row still refuses to launch,
- * because launching goes through the same eligibility check as everything
- * else. */
-function SavedPanel({ signedIn, statusOf }: { signedIn: boolean; statusOf: (task: CodingTaskSummary) => Status }) {
-  const { t } = useLanguage();
-  const bookmarks = useBookmarks(signedIn);
-  const save = useSaveChallenge();
-  const [name, setName] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  if (!signedIn) return null;
-  if (bookmarks.isLoading) return <p className="cd-note" role="status">{t('common.loading')}</p>;
-  if (bookmarks.isError) return <p className="cd-note cd-note--error" role="alert">{t('coding.loadError')}</p>;
-
-  const saved = (bookmarks.data?.saved ?? [])
-    .map((id) => SECTION_INDEX.find((task) => task.id === id))
-    .filter((task): task is CodingTaskSummary => Boolean(task));
-  const collections = bookmarks.data?.collections ?? [];
-
-  const create = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setError(null);
-    save.mutate({ op: 'collection-upsert', name: trimmed }, {
-      onSuccess: () => setName(''),
-      onError: (cause) => setError(cause instanceof ApiError && cause.code === 'name_taken'
-        ? t('coding.collections.nameTaken')
-        : t('coding.collections.failed')),
-    });
-  };
-
-  return (
-    <section className="cd-saved" aria-labelledby="cd-saved-title">
-      <Kicker as="h2" id="cd-saved-title">{t('coding.saved.title')}</Kicker>
-      {saved.length === 0 ? (
-        <p className="cd-note">{t('coding.saved.empty')}</p>
-      ) : (
-        <ul className="cd-rows">
-          {saved.map((task) => {
-            const status = statusOf(task);
-            return (
-              <li key={task.id} className="cd-saved__row">
-                <TaskRow
-                  task={task}
-                  status={status}
-                  saved
-                  saving={save.isPending}
-                  onSave={(taskId, next) => save.mutate({ op: 'save', taskId, saved: next })}
-                />
-                {status === 'locked' && <p className="cd-shortcuts">{t('coding.saved.lockedNote')}</p>}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      <h3 className="cd-saved__heading">{t('coding.collections.title')}</h3>
-      <ul className="cd-collections">
-        {collections.map((collection) => (
-          <li key={collection.collectionId}>
-            <span className="cd-collections__name">{collection.name}</span>
-            <span className="cd-collections__count">{t('coding.collections.count', { n: collection.taskIds.length })}</span>
-            <button
-              type="button"
-              className="cd-btn cd-btn--quiet"
-              disabled={save.isPending}
-              onClick={() => save.mutate({ op: 'collection-delete', collectionId: collection.collectionId })}
-            >
-              {t('coding.collections.delete')}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="cd-actions">
-        <label className="cd-visually-hidden" htmlFor="cd-collection-name">{t('coding.collections.newLabel')}</label>
-        <input
-          id="cd-collection-name"
-          type="text"
-          maxLength={60}
-          value={name}
-          placeholder={t('coding.collections.newLabel')}
-          onChange={(event) => setName(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); create(); } }}
-        />
-        <button type="button" className="cd-btn" disabled={save.isPending || name.trim() === ''} onClick={create}>
-          {t('coding.collections.create')}
-        </button>
-      </div>
-      {error && <p className="cd-note cd-note--error" role="alert">{error}</p>}
-    </section>
-  );
-}
-
 /* ── /coding ──────────────────────────────────────────────────────────── */
 export function CodingHome() {
   const { t, lang } = useLanguage();
@@ -332,8 +167,6 @@ export function CodingHome() {
         </div>
         {next && <Link className="cd-btn cd-btn--primary" to={`/coding/${next.track}/${next.id}`}>{t('coding.continue')}</Link>}
       </div>
-      <PracticeSessionPanel signedIn={isAuthenticated} />
-      <SavedPanel signedIn={isAuthenticated} statusOf={statusOf} />
       <section aria-label={t('coding.title')} className="cd-tracks">
         {CODING_SECTION_TRACKS.map((track) => {
           const tasks = SECTION_INDEX.filter((task) => task.track === track);
