@@ -203,7 +203,6 @@
 @media (max-width: 1023px) {
   .cd-splitter { display: none; }
 }
-.cd-workbench__bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 /* Focus mode: the task brief and the hint ladder step back so the editor and
    its results have the room. Nothing is removed — the brief is one click away
    again — and the reduced-motion rules are untouched because nothing moves. */
@@ -241,6 +240,9 @@
 .cd-editor-label { font-weight: 650; font-size: 0.92rem; }
 
 .cd-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cd-actions--end { justify-content: flex-end; }
+.cd-editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.cd-actions--utility { margin-left: auto; }
 .cd-btn {
   min-height: 44px;
   padding: 8px 16px;
@@ -263,6 +265,9 @@
 .cd-btn--primary:hover:not(:disabled) { filter: brightness(1.05); }
 .cd-btn--quiet { border-color: transparent; background: transparent; }
 .cd-btn--quiet:hover:not(:disabled) { background: var(--color-background-muted); border-color: transparent; }
+.cd-btn--icon { width: 44px; padding: 0; justify-content: center; }
+.cd-btn--flag { color: var(--ss-error); border-color: color-mix(in srgb, var(--ss-error) 32%, transparent); }
+.cd-btn--flag:hover:not(:disabled) { color: var(--ss-error); background: var(--ss-error-soft); border-color: var(--ss-error); }
 .cd-shortcuts { margin: 0; font-size: 0.8rem; color: var(--color-text-secondary); }
 
 .cd-note { margin: 0; padding: 10px 12px; border-radius: var(--radius-inner); background: var(--ss-info-soft); font-size: 0.9rem; line-height: 1.5; }
@@ -457,6 +462,33 @@
   color: var(--color-text-primary);
 }
 .cd-skip-note:focus-visible { outline: 2px solid var(--ss-focus); outline-offset: 2px; }
+.cd-skip-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 4px;
+  padding: 18px;
+  border: 1px solid var(--ss-card-line);
+  border-left: 3px solid var(--brand-accent);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  box-shadow: var(--ss-card-shadow);
+}
+.cd-skip-card h3 { margin: 0; font-family: var(--font-family-heading); font-size: 1.05rem; }
+.cd-skip-reasons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.cd-skip-reasons legend { grid-column: 1 / -1; margin-bottom: 2px; padding: 0; font-size: 0.88rem; font-weight: 650; color: var(--color-text-secondary); }
+.cd-skip-reason { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 44px; padding: 9px 11px; border: 1px solid var(--ss-card-line); border-radius: var(--radius-element); background: var(--color-background-muted); cursor: pointer; }
+.cd-skip-reason:has(input:checked) { border-color: var(--brand-accent); background: var(--brand-accent-soft); box-shadow: inset 0 0 0 1px var(--brand-accent); }
+.cd-skip-reason:focus-within { outline: 3px solid var(--ss-focus); outline-offset: 2px; }
+.cd-skip-reason input { width: 18px; height: 18px; flex: none; margin: 0; accent-color: var(--brand-accent); }
+.cd-skip-reason span { min-width: 0; overflow-wrap: anywhere; font-size: 0.9rem; font-weight: 600; }
+.cd-skip-field { display: flex; flex-direction: column; gap: 6px; }
+.cd-skip-field label { font-size: 0.88rem; font-weight: 650; }
+@media (max-width: 34rem) {
+  .cd-skip-reasons { grid-template-columns: minmax(0, 1fr); }
+  .cd-editor-actions, .cd-editor-actions > .cd-actions { width: 100%; }
+  .cd-actions--utility { justify-content: flex-end; }
+}
 .cd-verdict:focus-visible { outline: 2px solid var(--ss-focus); outline-offset: 3px; }
 
 /* Approach comparisons: one card per approach, each carrying its own cost. */

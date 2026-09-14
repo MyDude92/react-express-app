@@ -1828,6 +1828,7 @@ export const en = {
   'coding.session.nothing': 'There is nothing eligible to practise right now. Finish a level to open more.',
   'coding.session.failed': 'Could not start a session. Try again.',
   'coding.skip.title': 'Skip this one?',
+  'coding.skip.reasonLabel': 'Why are you skipping it?',
   'coding.skip.action': 'Skip',
   'coding.skip.too-easy': 'Too easy',
   'coding.skip.too-hard': 'Too hard',

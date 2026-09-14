@@ -17,6 +17,7 @@ import { taskResources } from '../../../shared/coding-docs';
 import { skipTask } from './practice';
 import { TermsBar } from '../components/ui/Terms';
 import { ReportDialog } from '../components/ReportDialog';
+import { FlagIcon } from '../components/ui/icons';
 import { reportQuestion } from '../lib/supabase';
 import { glossaryDomainFor } from '../lib/glossaryDomain';
 import { CodePuzzle } from './CodePuzzle';
@@ -125,6 +126,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
   const [formatError, setFormatError] = useState<string | null>(null);
   const [layout, setLayout] = useState<WorkbenchLayout>(readLayout);
   const [skipping, setSkipping] = useState(false);
+  const [skipSubmitting, setSkipSubmitting] = useState(false);
   const [skipReason, setSkipReason] = useState<SkipReason>('later');
   const [skipNote, setSkipNote] = useState('');
   const [skipResult, setSkipResult] = useState<{ required: boolean; next: string | null } | null>(null);
@@ -308,8 +310,24 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
     setCode(task.starter);
     setRun(null);
     setStale(false);
+    setHintsTaken(0);
     setConfirming(null);
   }, [task.starter]);
+
+  const confirmSkip = useCallback(async () => {
+    if (skipSubmitting) return;
+    setSkipSubmitting(true);
+    setSkipError(null);
+    try {
+      const answer = await skipTask({ taskId: task.id, reason: skipReason, note: skipNote.trim() || undefined });
+      setSkipResult({ required: answer.required, next: answer.next });
+      setSkipping(false);
+    } catch {
+      setSkipError(t('coding.skip.failed'));
+    } finally {
+      setSkipSubmitting(false);
+    }
+  }, [skipNote, skipReason, skipSubmitting, task.id, t]);
 
   const reveal = useCallback(async () => {
     if (!session) return;
@@ -633,23 +651,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
       onKeyDown={onKeyDown}
     >
       <span className="cd-visually-hidden" role="status" aria-live="polite">{announcement}</span>
-      <div className="cd-workbench__bar">
-        <button
-          type="button"
-          className="cd-btn cd-btn--quiet"
-          aria-pressed={layout.focus}
-          onClick={() => setLayout((current) => ({ ...current, focus: !current.focus }))}
-        >
-          {t(layout.focus ? 'coding.layout.focusOff' : 'coding.layout.focusOn')}
-        </button>
-        <button
-          type="button"
-          className="cd-btn cd-btn--quiet"
-          onClick={() => setLayout({ split: SPLIT_DEFAULT, focus: false })}
-        >
-          {t('coding.layout.reset')}
-        </button>
-      </div>
       <div
         className="cd-workbench__grid"
         style={{ ['--cd-split' as string]: `${layout.split}%` }}
@@ -659,25 +660,16 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             <div className="cd-pane__head">
               <Kicker>{trackLabel} · {tierLabel}{task.level > 0 ? ` · ${t('coding.level', { n: task.level })}` : ''}</Kicker>
               <h2 id={`${baseId}-title`}>{L(task.title)}</h2>
-              <div className="cd-pane__meta">
-                <span>{t('coding.minutes', { n: task.estimatedMinutes })}</span>
-                {formatOf(task) === 'debug' && <span className="cd-tag cd-tag--format">{t('coding.format.debug')}</span>}
-                {task.focus.map((tag) => <span key={tag} className="cd-tag">{tag}</span>)}
-              </div>
+              {formatOf(task) === 'debug' && (
+                <div className="cd-pane__meta">
+                  <span className="cd-tag cd-tag--format">{t('coding.format.debug')}</span>
+                </div>
+              )}
             </div>
             <Prompt className="cd-prompt" text={L(task.prompt)} />
             {/* Beside the brief, so nothing is injected into code the learner
                 is reading or about to run. */}
             <TermsBar texts={[L(task.prompt), L(task.title)]} domain={glossaryDomainFor(task.track)} />
-            {/* The report path the note used to carry, kept as a control of its
-                own. The dialog still sends the version of the brief that was on
-                screen, so a fix can be matched to what the learner read — and
-                without this button nothing else in this file can open it. */}
-            <div className="cd-actions">
-              <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setReportOpen(true)}>
-                {t('coding.reportTask')}
-              </button>
-            </div>
             {formatOf(task) === 'debug' && <p className="cd-note">{t('coding.format.debugHint')}</p>}
             {task.api && <p className="cd-api"><code>{task.api.method} {task.api.url}</code><br />{L(task.api.note)}</p>}
             {locked && <p className="cd-note cd-note--warn">{t('coding.lockedTask')} {t(`coding.lock.${locked}` as never)}</p>}
@@ -722,47 +714,43 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                   task the learner's level requires stays required and says so,
                   and nothing here unlocks anything. */}
               {skipping && !skipResult && (
-                <div className="cd-note" role="group" aria-label={t('coding.skip.title')}>
-                  <p style={{ margin: '0 0 8px', fontWeight: 650 }}>{t('coding.skip.title')}</p>
-                  <div className="cd-chips">
+                <form className="cd-skip-card" onSubmit={(event) => { event.preventDefault(); void confirmSkip(); }}>
+                  <h3>{t('coding.skip.title')}</h3>
+                  <fieldset className="cd-skip-reasons" disabled={skipSubmitting}>
+                    <legend>{t('coding.skip.reasonLabel')}</legend>
                     {SKIP_REASONS.map((reason) => (
-                      <button
-                        key={reason}
-                        type="button"
-                        className="cd-chip"
-                        aria-pressed={skipReason === reason}
-                        onClick={() => setSkipReason(reason)}
-                      >
-                        {t(`coding.skip.${reason}` as never)}
-                      </button>
+                      <label key={reason} className="cd-skip-reason">
+                        <input
+                          type="radio"
+                          name={`${baseId}-skip-reason`}
+                          value={reason}
+                          checked={skipReason === reason}
+                          onChange={() => setSkipReason(reason)}
+                        />
+                        <span>{t(`coding.skip.${reason}` as never)}</span>
+                      </label>
                     ))}
-                  </div>
-                  <label className="cd-editor-label" htmlFor={`${baseId}-skip-note`}>{t('coding.skip.noteLabel')}</label>
-                  <textarea
-                    id={`${baseId}-skip-note`}
-                    className="cd-skip-note"
-                    maxLength={280}
-                    rows={2}
-                    value={skipNote}
-                    onChange={(event) => setSkipNote(event.target.value)}
-                  />
-                  <div className="cd-actions">
-                    <button
-                      type="button"
-                      className="cd-btn cd-btn--primary"
-                      onClick={() => {
-                        setSkipError(null);
-                        void skipTask({ taskId: task.id, reason: skipReason, note: skipNote.trim() || undefined })
-                          .then((answer) => { setSkipResult({ required: answer.required, next: answer.next }); setSkipping(false); })
-                          .catch(() => setSkipError(t('coding.skip.failed')));
-                      }}
-                    >
-                      {t('coding.skip.confirm')}
-                    </button>
-                    <button type="button" className="cd-btn" onClick={() => setSkipping(false)}>{t('coding.skip.cancel')}</button>
+                  </fieldset>
+                  <div className="cd-skip-field">
+                    <label htmlFor={`${baseId}-skip-note`}>{t('coding.skip.noteLabel')}</label>
+                    <textarea
+                      id={`${baseId}-skip-note`}
+                      className="cd-skip-note"
+                      maxLength={280}
+                      rows={3}
+                      value={skipNote}
+                      disabled={skipSubmitting}
+                      onChange={(event) => setSkipNote(event.target.value)}
+                    />
                   </div>
                   {skipError && <p className="cd-note cd-note--error" role="alert">{skipError}</p>}
-                </div>
+                  <div className="cd-actions cd-actions--end">
+                    <button type="button" className="cd-btn cd-btn--quiet" disabled={skipSubmitting} onClick={() => setSkipping(false)}>{t('coding.skip.cancel')}</button>
+                    <button type="submit" className="cd-btn cd-btn--primary" disabled={skipSubmitting}>
+                      {t('coding.skip.confirm')}
+                    </button>
+                  </div>
+                </form>
               )}
               {skipResult && (
                 <div className="cd-note" role="status">
@@ -815,16 +803,36 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             <div id={`${baseId}-editor`}>
               <Editor value={code} onChange={onCodeChange} track={task.track} ariaLabel={t('coding.editorLabel')} readOnly={Boolean(solution) && mode === 'lesson'} />
             </div>
-            <div className="cd-actions">
-              <button type="button" className="cd-btn" onClick={() => void runLocal()} disabled={busy}>
-                {phase === 'running' ? (runPhase === 'compiling' ? t('coding.compiling') : t('coding.running')) : t('coding.run')}
-              </button>
-              <button type="button" className="cd-btn cd-btn--primary" onClick={() => void submit()} disabled={submitDisabled}>
-                {phase === 'submitting' ? t('coding.submitting') : t('coding.submit')}
-              </button>
-              {!isReact && <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={busy}>{t('coding.format')}</button>}
-              {isReact && <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={busy}>{t('coding.format')}</button>}
-              <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={busy}>{t('coding.reset')}</button>
+            <div className="cd-editor-actions">
+              <div className="cd-actions">
+                <button type="button" className="cd-btn" onClick={() => void runLocal()} disabled={busy}>
+                  {phase === 'running' ? (runPhase === 'compiling' ? t('coding.compiling') : t('coding.running')) : t('coding.run')}
+                </button>
+                <button type="button" className="cd-btn cd-btn--primary" onClick={() => void submit()} disabled={submitDisabled}>
+                  {phase === 'submitting' ? t('coding.submitting') : t('coding.submit')}
+                </button>
+                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={busy}>{t('coding.format')}</button>
+                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={busy}>{t('coding.reset')}</button>
+              </div>
+              <div className="cd-actions cd-actions--utility">
+                <button
+                  type="button"
+                  className="cd-btn cd-btn--quiet"
+                  aria-pressed={layout.focus}
+                  onClick={() => setLayout((current) => ({ ...current, focus: !current.focus }))}
+                >
+                  {t(layout.focus ? 'coding.layout.focusOff' : 'coding.layout.focusOn')}
+                </button>
+                <button
+                  type="button"
+                  className="cd-btn cd-btn--icon cd-btn--flag"
+                  aria-label={t('coding.reportTask')}
+                  title={t('coding.reportTask')}
+                  onClick={() => setReportOpen(true)}
+                >
+                  <FlagIcon size={18} />
+                </button>
+              </div>
             </div>
             {confirming === 'reset' && (
               <div className="cd-note cd-note--warn" role="alertdialog" aria-label={t('coding.reset')}>

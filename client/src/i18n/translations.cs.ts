@@ -1826,6 +1826,7 @@ export const cs: Record<TranslationKey, string> = {
   'coding.session.nothing': 'Teď není co procvičovat. Dokonči úroveň a otevře se toho víc.',
   'coding.session.failed': 'Lekci se nepodařilo spustit. Zkus to znovu.',
   'coding.skip.title': 'Přeskočit?',
+  'coding.skip.reasonLabel': 'Proč ji chceš přeskočit?',
   'coding.skip.action': 'Přeskočit',
   'coding.skip.too-easy': 'Moc snadné',
   'coding.skip.too-hard': 'Moc těžké',

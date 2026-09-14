@@ -16,7 +16,6 @@ import { useQueryClient } from '@tanstack/react-query';
 const PathRewardClaim = lazy(() => import('./PathRewardClaim'));
 import { Card } from '@astryxdesign/core/Card';
 import { VStack } from '@astryxdesign/core/VStack';
-import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
 import { useAuth } from '../../lib/auth';
 import { useT } from '../../i18n/LanguageContext';
@@ -187,8 +186,8 @@ export default function LearningPathsCard() {
           </div>
         )}
 
-        <HStack gap={1} align="center" justify="between">
-          <Text>
+        <div className="lp-profile-choice">
+          <Text className="lp-profile-choice__value">
             {t(trackLabelKey(subject, track as Track))}
             {' · '}
             {specialization === 'fde' ? 'Forward Deployed Engineer' : t('profile.pathNone')}
@@ -196,10 +195,10 @@ export default function LearningPathsCard() {
           <button type="button" className="lp-btn" onClick={() => setOpen(true)}>
             {needsProfile ? t('profile.completeAction') : t('profile.pathChoose')}
           </button>
-        </HStack>
+        </div>
 
         {profile && !needsProfile && (
-          <dl className="lp-inventory">
+          <dl className="lp-profile-inventory">
             <dt>{t('profile.picker.goalsLegend')}</dt>
             <dd>{profile.goals.map((goal) => t(`profile.goal.${goal}` as never)).join(' · ')}</dd>
             <dt>{t('profile.picker.experienceLegend')}</dt>
