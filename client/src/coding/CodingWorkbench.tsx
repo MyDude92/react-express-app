@@ -778,7 +778,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
         </section>
         <section className="cd-pane cd-pane--controls">
             <div className="cd-editor-actions">
-              <div className="cd-actions">
+              <div className="cd-actions cd-actions--commands">
                 {!puzzleMode && !pendingOnDesktop && <>
                 <FinButton type="button" className="cd-btn" onClick={() => void runLocal()} disabled={busy}>
                   {phase === 'running' ? (runPhase === 'compiling' ? t('coding.compiling') : t('coding.running')) : t('coding.run')}
@@ -801,25 +801,31 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                     {t('coding.skip.action')}
                   </FinButton>
                 )}
+                <div className="cd-actions cd-actions--utility">
+                  <FinButton
+                    type="button"
+                    className="cd-btn cd-btn--quiet"
+                    aria-pressed={layout.focus}
+                    onClick={() => setLayout((current) => ({ ...current, focus: !current.focus }))}
+                  >
+                    {t('coding.layout.focusOn')}
+                  </FinButton>
+                  <FinButton
+                    type="button"
+                    className="cd-btn cd-btn--icon cd-btn--flag"
+                    aria-label={t('coding.reportTask')}
+                    title={t('coding.reportTask')}
+                    onClick={() => setReportOpen(true)}
+                  >
+                    <FlagIcon size={18} />
+                  </FinButton>
+                </div>
               </div>
-              <div className="cd-actions cd-actions--utility">
-                <FinButton
-                  type="button"
-                  className="cd-btn cd-btn--quiet"
-                  aria-pressed={layout.focus}
-                  onClick={() => setLayout((current) => ({ ...current, focus: !current.focus }))}
-                >
-                  {t('coding.layout.focusOn')}
-                </FinButton>
-                <FinButton
-                  type="button"
-                  className="cd-btn cd-btn--icon cd-btn--flag"
-                  aria-label={t('coding.reportTask')}
-                  title={t('coding.reportTask')}
-                  onClick={() => setReportOpen(true)}
-                >
-                  <FlagIcon size={18} />
-                </FinButton>
+              <div className="cd-action-guidance">
+                <p id={`${baseId}-hint-note`} className="cd-shortcuts">
+                  {!attemptReady && nextRung ? t('coding.hintLocked') : !canGiveUp(taken, rungs.length) && !solution ? t('coding.giveUpLocked', { n: giveUpAfter(rungs.length) }) : ''}
+                </p>
+                <p className="cd-shortcuts">{t('coding.shortcuts')}</p>
               </div>
             </div>
             <div className="cd-hints" aria-label={t('coding.hint')}>
@@ -893,9 +899,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                   )}
                 </div>
               )}
-              <p id={`${baseId}-hint-note`} className="cd-shortcuts">
-                {!attemptReady && nextRung ? t('coding.hintLocked') : !canGiveUp(taken, rungs.length) && !solution ? t('coding.giveUpLocked', { n: giveUpAfter(rungs.length) }) : ''}
-              </p>
+
               {confirming === 'reveal' && (
                 <div className="cd-note cd-note--warn" role="alertdialog" aria-label={t('coding.giveUp')}>
                   <p style={{ margin: '0 0 8px' }}>{mode === 'lesson' ? t('coding.lesson.giveUpNote') : t('coding.giveUpConfirm')}</p>
@@ -922,7 +926,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                 </div>
               </div>
             )}
-            <p className="cd-shortcuts">{t('coding.shortcuts')}</p>
             {!online && <p className="cd-note cd-note--warn" role="status">{t('coding.offline')}</p>}
             {formatError && <p className="cd-note cd-note--error" role="status">{formatError}</p>}
             {submitError && <p className="cd-note cd-note--error" role="alert">{submitError}</p>}

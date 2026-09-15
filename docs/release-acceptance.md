@@ -1,5 +1,18 @@
 # Release acceptance matrix
 
+## Workbench command spacing and guidance — 2026-09-15
+
+Desktop commands share one left-aligned row, including Focus and Report.
+The command column receives at least two thirds of the available row width
+with larger gaps; contextual hint guidance and keyboard instructions occupy
+the right-aligned text column. Narrow layouts wrap controls to avoid overflow.
+Existing EN/CS guidance and hint accessibility relationships are retained.
+
+Production build, API/tooling types, launch contracts, 15 targeted client tests, diff checks, and both
+production dependency audits passed (zero vulnerabilities). Responsive checking
+is blocked by missing Chrome/Chromium; narrow/zoom/light/dark visual acceptance
+has not been established for this spacing change.
+
 ## Evolving stage code handoff — 2026-09-15
 
 The workbench sends the exact submitted snapshot to the route. Evolving drafts
