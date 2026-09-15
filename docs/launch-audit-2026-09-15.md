@@ -26,6 +26,7 @@ and [#191](https://github.com/lukaskourilcz/react-express-app/issues/191).
 | Workbench accessibility | Fixed the hints group role and editor line-number contrast; Axe checks pass in both themes. |
 | Stage navigation on phones | Compact numbered controls retain full accessible labels and scroll horizontally, keeping the brief reachable with 10–12 stages. |
 | Workbench heading/product identity | Standalone tasks expose an h1, embedded lesson tasks retain h2, and the home link names the current product in EN/CS. |
+| Deployed React grading failed while loading the Sandbox SDK (`ERR_REQUIRE_ESM`) | Build a CommonJS SDK bundle and verify it with require(ESM) disabled. Module-load failures now also return retryable grading feedback; operational logs expose safe error categories. |
 | Local preview could not boot the opaque-origin React module | Preview allows Origin:null for its public assets, matching the production sandbox's cross-origin serving behavior. |
 
 Checkpoints separate, for example, initial data loading from loading/error
@@ -58,7 +59,23 @@ and briefs require only the smaller checkpoint contract.
   Enter-key form submission and zero Axe WCAG A/AA findings in the workbench.
   Public-guide checks include no-JavaScript rendering. The workbench retains the
   existing product decision to defer full code editing on narrow screens.
-- Preview verification is recorded below once the remote build finishes.
+- Additional devShark dark/Czech responsive sweep: **63/63 passed** across nine
+  routes and seven widths (360–1440px). Public HTML checks passed for 11 URLs;
+  initial compressed JS/CSS was 219,943 bytes against the 243,000-byte budget.
+- Full remote CI passed for both products on `a0e332a` ([run](https://github.com/lukaskourilcz/react-express-app/actions/runs/35025211720)), including browser, component, and performance checks. The first preview exposed missing Preview product
+  variables: it defaulted to StudyShark and rejected coding requests. The six
+  product/scope/canonical settings are now configured for devShark Preview.
+  Production product settings were not changed.
+- Deployed API acceptance on `a0e332a`: **13/13 passed**, submitting the first
+  stage of each evolving/full-stack project with its reference solution. All
+  three React submissions exercised the deployed OIDC-authenticated VM runner
+  (approximately 7–8.5 seconds including CLI transport); JavaScript/TypeScript
+  submissions passed too. Anonymous results awarded zero XP and did not persist
+  progress. Preview: [verified deployment](https://react-express-m8gtydk9f-lukas-kourils-projects.vercel.app).
+- The six real VM integration checks also passed with require(ESM) disabled,
+  including forms, local storage, full-stack stockroom, no host credentials,
+  denied network access and external termination of a synchronous infinite loop.
+  The build now checks SDK loading with that restriction to prevent recurrence.
 
 ## Live account and database
 
