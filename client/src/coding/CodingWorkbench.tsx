@@ -829,7 +829,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
               </div>
               <div className="cd-action-guidance">
                 <p id={`${baseId}-hint-note`} className="cd-shortcuts">
-                  {!attemptReady && nextRung ? t('coding.hintLocked') : !canGiveUp(taken, rungs.length) && !solution ? t('coding.giveUpLocked', { n: giveUpAfter(rungs.length) }) : ''}
+                  {!attemptReady && nextRung ? t('coding.hintLocked') : ''}
                 </p>
                 <p className="cd-shortcuts">{t('coding.shortcuts')}</p>
               </div>

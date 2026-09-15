@@ -7,7 +7,8 @@ verdict at the bottom of the Results board, visible only on the Results tab.
 The compact treatment uses 0.8rem type, 8px/10px padding, tight line spacing,
 and a sentence-case label. Explicitly requested hints remain below the toolbar.
 EN/CS text and the accessible status announcement are retained. Commands use
-a fixed 12px gap with no space-between distribution.
+a fixed 12px gap with no space-between distribution. The toolbar no longer
+shows the solution hint-count availability message.
 
 Production build, nine workbench tests, API types, launch contracts, both production dependency
 audits (zero vulnerabilities), and diff checks passed. Local responsive checking
