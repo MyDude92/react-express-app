@@ -20,6 +20,11 @@ Production build (including the hover-retention gate), API typecheck, launch con
 audits passed (zero vulnerabilities). Local responsive execution remains
 blocked by missing Chrome/Chromium.
 
+The initial CI run exposed existing test-only TypeScript errors in coding-actions:
+missing `initialCode` props and unsupported `exact` options on RTL role queries.
+The follow-up supplies null drafts and uses RTL's default exact name matching.
+Tooling typecheck and all 18 client tests pass after this correction.
+
 ## Coding controls and randomized fins — 2026-09-15
 
 Stage links now appear in Resources. The compact, full-width action bar uses

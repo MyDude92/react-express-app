@@ -25,14 +25,14 @@ const task: PlayableCodingTask = {
   verify: 'tests', estimatedMinutes: 5, tests: [],
 };
 function mount(onDraft = vi.fn()) {
-  return { onDraft, ...render(<MemoryRouter><LanguageProvider><CodingWorkbench task={task} session={null} locked={null} signedIn={false} mode="section" onDraft={onDraft} /></LanguageProvider></MemoryRouter>) };
+  return { onDraft, ...render(<MemoryRouter><LanguageProvider><CodingWorkbench initialCode={null} task={task} session={null} locked={null} signedIn={false} mode="section" onDraft={onDraft} /></LanguageProvider></MemoryRouter>) };
 }
 
 it('disables idle/empty formatting and enables it only for a real formatting change', async () => {
   mount();
-  expect(screen.getByRole('button', {name:'Hint',exact:true})).toBeInTheDocument();
-  const format = screen.getByRole('button', { name: 'Format', exact: true });
-  expect(screen.getByRole('button', { name: 'Reset', exact: true })).toBeDisabled();
+  expect(screen.getByRole('button', {name:'Hint'})).toBeInTheDocument();
+  const format = screen.getByRole('button', { name: 'Format' });
+  expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled();
   expect(format).toBeDisabled();
   fireEvent.change(screen.getByLabelText('Test editor'), { target: { value: 'const one=()=>2' } });
   await waitFor(() => expect(format).toBeEnabled(), { timeout: 5000 });
@@ -46,11 +46,11 @@ it('disables idle/empty formatting and enables it only for a real formatting cha
 it('Reset clears exhausted hints even when the code is unchanged', async () => {
   localStorage.setItem('devshark:coding:hints:js-test-editor', '20');
   mount();
-  const reset = screen.getByRole('button', { name: 'Reset', exact: true });
+  const reset = screen.getByRole('button', { name: 'Reset' });
   expect(reset).toBeEnabled();
   fireEvent.click(reset);
   const dialog = screen.getByRole('alertdialog', { name: 'Reset' });
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Reset', exact: true }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Reset' }));
   await waitFor(() => expect(localStorage.getItem('devshark:coding:hints:js-test-editor')).toBe('0'));
   expect(reset).toBeDisabled();
 });
@@ -70,12 +70,12 @@ it('uses a visible, accessible branded loading status', () => {
 
 it('groups all learning controls below the editor with revealed hints after the bar', () => {
   localStorage.setItem('devshark:coding:hints:js-test-editor', '1');
-  render(<MemoryRouter><LanguageProvider><CodingWorkbench task={task} session="test-session" locked={null} signedIn mode="section" /></LanguageProvider></MemoryRouter>);
-  const run = screen.getByRole('button',{name:'Run',exact:true});
+  render(<MemoryRouter><LanguageProvider><CodingWorkbench initialCode={null} task={task} session="test-session" locked={null} signedIn mode="section" /></LanguageProvider></MemoryRouter>);
+  const run = screen.getByRole('button',{name:'Run'});
   const bar = run.closest('.cd-editor-actions')!;
-  expect(within(bar as HTMLElement).getByRole('button',{name:'Solution',exact:true})).toBeInTheDocument();
-  expect(within(bar as HTMLElement).getByRole('button',{name:'Next hint',exact:true})).toBeInTheDocument();
-  expect(within(bar as HTMLElement).getByRole('button',{name:'Focus',exact:true})).toHaveAttribute('aria-pressed','false');
+  expect(within(bar as HTMLElement).getByRole('button',{name:'Solution'})).toBeInTheDocument();
+  expect(within(bar as HTMLElement).getByRole('button',{name:'Next hint'})).toBeInTheDocument();
+  expect(within(bar as HTMLElement).getByRole('button',{name:'Focus'})).toHaveAttribute('aria-pressed','false');
   expect(within(bar as HTMLElement).getByRole('button',{name:/Skip/i})).toBeInTheDocument();
   const hint = screen.getByText('Use a function.');
   expect(hint.closest('li')).toBeInTheDocument();
@@ -103,7 +103,7 @@ it('formats TSX without discarding TypeScript annotations', async () => {
 
 it('places authored stage links inside Resources, away from the task brief', () => {
   const reference={title:{en:'Addition and numeric operators',cs:'Sčítání a číselné operátory'},url:'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_operators#arithmetic_operators'};
-  render(<MemoryRouter><LanguageProvider><CodingWorkbench task={{...task,references:[reference]}} session={null} locked={null} signedIn={false} mode="section" /></LanguageProvider></MemoryRouter>);
+  render(<MemoryRouter><LanguageProvider><CodingWorkbench initialCode={null} task={{...task,references:[reference]}} session={null} locked={null} signedIn={false} mode="section" /></LanguageProvider></MemoryRouter>);
   expect(screen.queryByRole('heading',{name:'Stage references'})).toBeNull();
   fireEvent.click(screen.getByRole('tab',{name:/Resources/}));
   const link=screen.getByRole('link',{name:reference.title.en});
@@ -114,7 +114,7 @@ it('places authored stage links inside Resources, away from the task brief', () 
 
 it('keeps a randomized fin stable across button updates without changing its accessible name', () => {
   const {rerender}=render(<FinButton onClick={()=>{}}>Continue</FinButton>);
-  const button=screen.getByRole('button',{name:'Continue',exact:true});
+  const button=screen.getByRole('button',{name:'Continue'});
   const profile=button.getAttribute('style');
   rerender(<FinButton disabled>Continue</FinButton>);
   expect(button).toHaveAttribute('style',profile);
