@@ -535,14 +535,14 @@ export function CodingTaskScreen() {
         {isAuthenticated && <SaveButton taskId={data.task.id} saved={bookmarks.data?.saved.includes(data.task.id) ?? false} busy={bookmarks.isPending || bookmarks.isError || save.isPending} onToggle={saved => save.mutate({ op: 'save', taskId: data.task.id, saved })} />}
       </div>
       {(bookmarks.isError || save.isError) && <p role="alert" className="cd-note cd-note--error">{t('coding.collections.failed')} <button className="cd-btn" onClick={() => void bookmarks.refetch()}>{t('coding.retry')}</button></p>}
-      {stage && <nav className="cd-actions" aria-label={t('coding.evolving.title')}>
+      {stage && <nav className="cd-actions cd-stage-nav" aria-label={t('coding.evolving.title')}>
         {stage.challenge.stages.map((id, index) => {
           const passed = new Set(Object.entries(progress.data?.tasks ?? {}).filter(([, task]) => task.status === 'passed').map(([id]) => id));
           const available = evolvingUnlocked(id, passed);
           const label = t('coding.evolving.stage', { n: index + 1, total: stage.challenge.stages.length });
           return available || id === data.task.id
-            ? <Link key={id} className="cd-btn" aria-current={id === data.task.id ? 'step' : undefined} to={`/coding/${evolvingTaskTrack(id)}/${id}`}>{evolvingPassed(id, passed) ? '✓ ' : ''}{label}</Link>
-            : <button key={id} className="cd-btn" disabled>{label}</button>;
+            ? <Link key={id} className={`cd-btn${id === data.task.id ? ' cd-btn--primary' : ''}`} aria-label={label} title={label} aria-current={id === data.task.id ? 'step' : undefined} to={`/coding/${evolvingTaskTrack(id)}/${id}`}>{evolvingPassed(id, passed) ? '✓ ' : ''}{index + 1}</Link>
+            : <button key={id} className="cd-btn" aria-label={label} title={label} disabled>{index + 1}</button>;
         })}
       </nav>}
       {data.task.track === 'system-design'

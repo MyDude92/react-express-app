@@ -24,6 +24,7 @@ and [#191](https://github.com/lukaskourilcz/react-express-app/issues/191).
 | Coding sessions were not checked against their issuing account at submit/reveal | Reject a bound session from another account before grading or database access; also scope linked roadmap attempt lookups to the authenticated user. |
 | Stage workloads were oversized | 13 evolving projects now have 136 stages: 10 per single-track project and 12 per full-stack project, adding 62 checkpoints. Existing IDs/drafts remain; old milestone passes cover new prerequisites without extra XP. |
 | Workbench accessibility | Fixed the hints group role and editor line-number contrast; Axe checks pass in both themes. |
+| Stage navigation on phones | Compact numbered controls retain full accessible labels and scroll horizontally, keeping the brief reachable with 10–12 stages. |
 | Workbench heading/product identity | Standalone tasks expose an h1, embedded lesson tasks retain h2, and the home link names the current product in EN/CS. |
 | Local preview could not boot the opaque-origin React module | Preview allows Origin:null for its public assets, matching the production sandbox's cross-origin serving behavior. |
 
