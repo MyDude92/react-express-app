@@ -31,7 +31,7 @@ export function finHoverStyle(animation: FinHoverAnimation): CSSProperties {
     '--fin-position': `${swim ? 0 : position}%`,
     '--fin-flip': direction === 1 ? -1 : 1,
     '--fin-from-x': swim ? (direction === 1 ? '-40%' : '115%') : motion === 'diagonal' ? `${direction * -30}%` : '0%',
-    '--fin-to-x': swim ? (direction === 1 ? '115%' : '-40%') : '0%',
+    '--fin-to-x': swim ? (direction === 1 ? '45%' : '10%') : '0%',
     '--fin-from-y': motion === 'rise' || motion === 'diagonal' ? '100%' : motion === 'dive' ? '-110%' : '0%',
     '--fin-from-scale': motion === 'diagonal' ? 0.65 : 1,
   } as CSSProperties;

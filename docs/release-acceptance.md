@@ -1,5 +1,25 @@
 # Release acceptance matrix
 
+## Coding discovery and production hover fix — 2026-09-15
+
+The live Continue button reproduced `:hover = true` with fin opacity still zero.
+PurgeCSS removed its compound activation selector despite the class safelist.
+Flat hover/focus selectors and a narrowly scoped safelist retain it; the production build
+fails if a fin stylesheet loses its hover activation rule. Swimming fins stop
+inside the button instead of exiting its clipped area.
+
+Coding discovery now uses a featured next challenge, a compact track directory,
+numbered evolving-project rows with stage meters, a distinct FullStack feature,
+and divided technique lists. EN/CS copy stays paired. Mobbin references reviewed:
+[Coursera resume hierarchy](https://mobbin.com/screens/18683325-d982-4756-b06e-4ed52c933b06),
+[Codecademy skills density](https://mobbin.com/screens/597bbefb-e6cf-401c-abc6-47789b29e5b7),
+and [Uxcel learning hierarchy](https://mobbin.com/screens/519c99ca-f49e-4509-b6db-57a74154d859).
+These informed layout only; no external artwork was copied.
+
+Production build (including the hover-retention gate), API typecheck, launch contracts, 18 client tests and both production dependency
+audits passed (zero vulnerabilities). Local responsive execution remains
+blocked by missing Chrome/Chromium.
+
 ## Coding controls and randomized fins — 2026-09-15
 
 Stage links now appear in Resources. The compact, full-width action bar uses

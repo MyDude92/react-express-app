@@ -148,16 +148,23 @@ function TaskRow({ task, status, saved, onSave, saving }: {
 function EvolvingGallery({ passed, fullstack = false }: { passed: ReadonlySet<string>; fullstack?: boolean }) {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  return <section aria-labelledby={fullstack ? 'fullstack-title' : 'evolving-title'}>
+  return <section className="cd-projects" aria-labelledby={fullstack ? 'fullstack-title' : 'evolving-title'}>
+    <div className="cd-projects__intro">
     <Kicker as="h2" id={fullstack ? 'fullstack-title' : 'evolving-title'}>{t(fullstack ? 'coding.evolving.fullstack' : 'coding.evolving.title')}</Kicker>
     <p className="cd-lead">{t(fullstack ? 'coding.evolving.fullstackBody' : 'coding.evolving.body')}</p>
-    <div className="cd-tracks">{EVOLVING_CHALLENGES.filter(challenge => (challenge.category === 'fullstack') === fullstack).map(challenge => {
+    </div>
+    <div className="cd-project-list">{EVOLVING_CHALLENGES.filter(challenge => (challenge.category === 'fullstack') === fullstack).map((challenge, index) => {
       const completed = challenge.stages.filter(id => passed.has(id)).length;
-      return <article key={challenge.id} className="cd-track">
-        <p>{fullstack ? 'JavaScript · TypeScript · React · API' : t(`coding.track.${challenge.track}` as never)}</p>
+      return <article key={challenge.id} className="cd-project">
+        <span className="cd-project__number" aria-hidden>{String(index + 1).padStart(2, '0')}</span>
+        <div className="cd-project__name">
+        <p className="cd-project__track">{fullstack ? 'JavaScript · TypeScript · React · API' : t(`coding.track.${challenge.track}` as never)}</p>
         <h3>{challenge.title[lang]}</h3>
-        <p>{t('coding.evolving.progress', { n: completed, total: challenge.stages.length })}</p>
-        <WaterlineProgress value={100 * completed / challenge.stages.length} label={challenge.title[lang]} />
+        </div>
+        <div className="cd-project__progress">
+          <div className="cd-stage-meter" aria-hidden>{challenge.stages.map(id => <span key={id} data-complete={passed.has(id)} />)}</div>
+          <p>{t('coding.evolving.progress', { n: completed, total: challenge.stages.length })}</p>
+        </div>
         <SwimCta label={completed === challenge.stages.length ? t('coding.evolving.complete') : t('coding.continue')} onClick={() => {const id=evolvingResume(challenge,passed);navigate(`/coding/${evolvingTaskTrack(id)}/${id}`);}} />
       </article>;
     })}</div>
@@ -174,38 +181,47 @@ export function CodingHome() {
   const dueCount = useMemo(() => (progress.data?.due ?? []).filter((id) => SECTION_INDEX.some((task) => task.id === id)).length, [progress.data]);
 
   return (
-    <div className="cd-page ss-pop">
+    <div className="cd-page cd-discovery ss-pop">
       <header>
         <Kicker>{t('coding.kicker')}</Kicker>
         <h1>{t('coding.title')}</h1>
         <p className="cd-lead">{t('coding.subtitle')}</p>
       </header>
       {!isAuthenticated && <p className="cd-note">{t('coding.signInHint')}</p>}
-      <div className="cd-continue">
+      <div className="cd-continue cd-resume">
         <div>
-          <p style={{ margin: 0, fontWeight: 650 }}>{next ? t('coding.continueWith', { title: next.title[lang] || next.title.en }) : t('coding.allDone')}</p>
+          <Kicker>{t('coding.discovery.next')}</Kicker>
+          <h2>{next ? next.title[lang] || next.title.en : t('coding.allDone')}</h2>
+          {next && <p className="cd-lead">{t(`coding.track.${next.track}` as never)}</p>}
           {dueCount > 0 && <p style={{ margin: '4px 0 0' }}><Link className="cd-link" to="/coding/review">{t('coding.review.count', { n: dueCount })}</Link></p>}
         </div>
         {next && <SwimCta label={t('coding.continue')} onClick={()=>navigate(`/coding/${next.track}/${next.id}`)} />}
       </div>
-      <section aria-label={t('coding.title')} className="cd-tracks">
+      <section aria-label={t('coding.title')} className="cd-track-directory">
         {CODING_SECTION_TRACKS.map((track) => {
           const tasks = SECTION_INDEX.filter((task) => task.track === track);
           const done = tasks.filter((task) => passed.has(task.id)).length;
           return (
-            <Link key={track} className="cd-track ss-lift" to={`/coding/${track}`}>
+            <Link key={track} className="cd-track-entry" to={`/coding/${track}`}>
+              <span className="cd-track-entry__symbol" aria-hidden>{track === 'javascript' ? 'JS' : track === 'typescript' ? 'TS' : '⚛'}</span>
+              <div className="cd-track-entry__body">
               <div className="cd-track__title">
                 <h2>{t(`coding.track.${track}` as never)}</h2>
                 <span className="cd-track__count">{t('coding.progress', { passed: done, total: tasks.length })}</span>
               </div>
               <WaterlineProgress value={tasks.length ? (100 * done) / tasks.length : 0} label={t('coding.progress', { passed: done, total: tasks.length })} />
               <p className="cd-track__blurb">{t(`coding.trackBlurb.${track}` as never)}</p>
+              </div>
+              <span className="cd-track-entry__arrow" aria-hidden>↗</span>
             </Link>
           );
         })}
       </section>
       <EvolvingGallery passed={passed} />
-      <Link className="cd-track ss-lift" to="/coding/fullstack"><h2>{t('coding.evolving.fullstack')}</h2><p>{t('coding.evolving.fullstackBody')}</p></Link>
+      <Link className="cd-fullstack-feature" to="/coding/fullstack">
+        <div><Kicker>{t('coding.discovery.build')}</Kicker><h2>{t('coding.evolving.fullstack')}</h2><p>{t('coding.discovery.fullstack')}</p><span className="cd-link">{t('coding.discovery.explore')} <span aria-hidden>↗</span></span></div>
+        <div className="cd-stack-path" aria-hidden><span>JS</span><i>→</i><span>TS</span><i>→</i><span>API</span><i>→</i><span>React</span></div>
+      </Link>
       {/* Ten technique groups, each one a row that says what it is rather than
           a pill that says only its name and a number. The tag count is the
           honest measure of breadth; the sentence is what makes the name mean

@@ -55,9 +55,14 @@ function purgeAstryxCss(): Plugin {
             // such classes exist in total, so keeping them costs almost nothing.
             standard: [/^ss-/, /^rm-/, /^quiz-/, /^devshark/, /^cd-/, /^cm-/, /^astryx-/, 'html', 'body'],
             // Attribute/state selectors composed at runtime.
-            greedy: [/data-theme/, /data-color-mode/, /data-selected/, /data-active/, /data-tone/, /data-locked/, /data-complete/],
+            // Preserve compound hover/focus selectors: PurgeCSS otherwise drops
+            // :is(...):not(:disabled) even when its classes are safelisted.
+            greedy: [/ss-fin-button/, /data-theme/, /data-color-mode/, /data-selected/, /data-active/, /data-tone/, /data-locked/, /data-complete/],
           },
         });
+        if (result.css.includes('.ss-fin-hover__swimmer') && !/ss-fin-button[^{}]*:hover[^{}]*\{/.test(result.css)) {
+          throw new Error('CSS cleanup removed the shark fin hover activation rule');
+        }
         await writeFile(cssPath, result.css);
         const after = result.css.length;
         this.info(

@@ -36,6 +36,52 @@
 .cd-page a.cd-link { color: var(--color-text-accent); font-weight: 600; }
 
 /* ── section lists ─────────────────────────────────────────────────────── */
+.cd-discovery { gap: 40px; }
+.cd-discovery .cd-resume { padding: clamp(24px, 4vw, 44px); border: 0; border-left: 4px solid var(--brand-accent); background: color-mix(in srgb, var(--brand-accent) 8%, var(--color-background-surface)); }
+.cd-resume h2 { margin-top: 10px; font-size: clamp(1.5rem, 3vw, 2.3rem); }
+.cd-track-directory { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-block: 1px solid var(--ss-card-line); }
+.cd-track-entry { display: flex; gap: 14px; padding: 24px 18px; color: inherit; text-decoration: none; min-width: 0; }
+.cd-track-entry + .cd-track-entry { border-left: 1px solid var(--ss-card-line); }
+.cd-track-entry__body { flex: 1; min-width: 0; display: grid; gap: 12px; }
+.cd-track-entry .cd-track__title { align-items: flex-start; flex-direction: column; }
+.cd-track-entry__symbol { font-family: var(--cd-mono); font-weight: 750; color: var(--color-text-accent); font-size: 1.25rem; }
+.cd-track-entry__arrow { margin-left: auto; color: var(--color-text-accent); }
+.cd-track-entry:hover, .cd-project:hover { background: var(--color-background-muted); }
+.cd-projects { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(0, 2fr); gap: 32px; align-items: start; }
+.cd-projects__intro .cd-lead { margin-top: 14px; line-height: 1.7; }
+.cd-project-list { min-width: 0; border-top: 1px solid var(--ss-card-line); }
+.cd-project { display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(110px, .65fr) auto; align-items: center; gap: 16px; padding: 22px 8px; border-bottom: 1px solid var(--ss-card-line); }
+.cd-project__number { color: var(--color-text-secondary); font: .8rem var(--cd-mono); }
+.cd-project__name { min-width: 0; }
+.cd-project__name h3 { font-size: 1.05rem; margin: 4px 0 0; overflow-wrap: anywhere; }
+.cd-project__track { font-size: .75rem; color: var(--color-text-secondary); margin: 0; }
+.cd-project__progress p { font-size: .75rem; color: var(--color-text-secondary); margin: 7px 0 0; }
+.cd-stage-meter { display: flex; gap: 4px; }
+.cd-stage-meter span { flex: 1; height: 5px; border-radius: 2px; background: var(--color-border-strong); }
+.cd-stage-meter span[data-complete="true"] { background: var(--brand-accent); }
+.cd-project .ss-swim-cta { min-width: 112px; }
+.cd-fullstack-feature { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; padding: clamp(24px, 4vw, 44px); background: var(--color-background-muted); color: inherit; text-decoration: none; border-radius: var(--radius-container); }
+.cd-fullstack-feature h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); margin-top: 12px; }
+.cd-fullstack-feature p { color: var(--color-text-secondary); line-height: 1.7; max-width: 50ch; }
+.cd-stack-path { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; font-family: var(--cd-mono); }
+.cd-stack-path span { padding: 20px 12px; border-block: 2px solid var(--brand-accent); color: var(--color-text-accent); font-weight: 700; }
+.cd-stack-path i { font-style: normal; color: var(--color-text-secondary); }
+.cd-track-entry:focus-visible, .cd-fullstack-feature:focus-visible { outline: 3px solid var(--ss-focus); outline-offset: 3px; }
+.cd-discovery .cd-techniques { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
+.cd-discovery .cd-technique { border: 0; border-bottom: 1px solid var(--ss-card-line); border-radius: 0; padding: 20px 0; background: transparent; }
+.cd-discovery .cd-technique:hover { background: var(--color-background-muted); }
+@media (max-width: 1050px) {
+  .cd-projects { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .cd-track-entry { padding-inline: 12px; gap: 8px; }
+}
+@media (max-width: 700px) {
+  .cd-track-directory, .cd-fullstack-feature, .cd-discovery .cd-techniques { grid-template-columns: minmax(0, 1fr); }
+  .cd-track-entry + .cd-track-entry { border-left: 0; border-top: 1px solid var(--ss-card-line); }
+  .cd-project { grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; padding-block: 18px; }
+  .cd-project__progress { grid-column: 2; grid-row: 2; }
+  .cd-project .ss-swim-cta { grid-column: 3; grid-row: 1 / 3; min-width: 0; padding-inline: 12px !important; }
+  .cd-stack-path { justify-content: flex-start; }
+}
 .cd-tracks {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
