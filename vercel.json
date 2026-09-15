@@ -3,13 +3,13 @@
   "outputDirectory": "client/dist",
   "framework": null,
   "functions": {
-    "api/**/*.ts": {
-      "maxDuration": 10,
-      "includeFiles": "node_modules/{typescript/lib/lib.*.d.ts,react/cjs/*.development.js,react-dom/cjs/*.development.js}"
-    },
     "api/quiz/roadmap.ts": {
       "maxDuration": 45,
       "includeFiles": "{lib/coding/generated/react-sandbox.cjs,node_modules/typescript/lib/lib.*.d.ts}"
+    },
+    "api/**/*.ts": {
+      "maxDuration": 10,
+      "includeFiles": "node_modules/{typescript/lib/lib.*.d.ts,react/cjs/*.development.js,react-dom/cjs/*.development.js}"
     }
   },
   "headers": [

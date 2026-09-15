@@ -30,17 +30,17 @@ const result = (extra: Partial<CodingVerdictResponse>): CodingVerdictResponse =>
 it('shows the server React results after Submit instead of stale browser failures', async () => {
   vi.mocked(submitCoding).mockResolvedValue(result({}));
   mount();
-  fireEvent.click(screen.getByRole('button',{name:'Submit',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'Submit'}));
   await waitFor(()=>expect(screen.getByRole('tab',{name:/Results/})).toHaveTextContent('1/1'));
   expect(screen.queryByText('local form event failed')).toBeNull();
   expect(screen.getByRole('heading',{level:1})).toHaveTextContent('Test form');
-  fireEvent.click(screen.getByRole('button',{name:'Run',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'Run'}));
   await waitFor(()=>expect(screen.getByRole('tab',{name:/Results/})).toHaveTextContent('0/1'));
 });
 it('shows the server startup error so a learner can understand a failed submission', async () => {
   vi.mocked(submitCoding).mockResolvedValue(result({verdict:'error',results:[],codeError:'The React runner could not start. Try again in a moment.'}));
   mount();
-  fireEvent.click(screen.getByRole('button',{name:'Submit',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'Submit'}));
   await waitFor(()=>expect(screen.getByText(/The React runner could not start/)).toBeVisible());
   expect(screen.queryByText('local form event failed')).toBeNull();
 });

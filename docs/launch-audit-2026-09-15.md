@@ -23,6 +23,7 @@ and [#191](https://github.com/lukaskourilcz/react-express-app/issues/191).
 | Submitted React source ran in the credential-bearing API process | Both Coding and learning paths now use disposable, network-denied Vercel Sandbox microVMs. No unsafe local fallback. Representative suites, credential/network isolation and external infinite-loop termination passed. See the remaining integrity limit below. |
 | Coding sessions were not checked against their issuing account at submit/reveal | Reject a bound session from another account before grading or database access; also scope linked roadmap attempt lookups to the authenticated user. |
 | Stage workloads were oversized | 13 evolving projects now have 136 stages: 10 per single-track project and 12 per full-stack project, adding 62 checkpoints. Existing IDs/drafts remain; old milestone passes cover new prerequisites without extra XP. |
+| Workbench accessibility | Fixed the hints group role and editor line-number contrast; Axe checks pass in both themes. |
 | Workbench heading/product identity | Standalone tasks expose an h1, embedded lesson tasks retain h2, and the home link names the current product in EN/CS. |
 | Local preview could not boot the opaque-origin React module | Preview allows Origin:null for its public assets, matching the production sandbox's cross-origin serving behavior. |
 
@@ -51,8 +52,12 @@ and briefs require only the smaller checkpoint contract.
 - Local StudyShark responsive sweep: **93/93 passed**. Its five bilingual,
   light/dark public-guide browser checks also passed, including no-JavaScript
   rendering.
-- The broader workbench browser matrix and deployed preview checks are recorded
-  in the final acceptance entry after completion.
+- devShark built-browser checks: **9/9 passed**. Both languages and themes cover
+  the 360px pending-for-desktop state, 1440px editing, stage advancement, rerun,
+  Enter-key form submission and zero Axe WCAG A/AA findings in the workbench.
+  Public-guide checks include no-JavaScript rendering. The workbench retains the
+  existing product decision to defer full code editing on narrow screens.
+- Preview verification is recorded below once the remote build finishes.
 
 ## Live account and database
 
