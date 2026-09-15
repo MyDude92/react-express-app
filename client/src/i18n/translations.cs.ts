@@ -1907,6 +1907,7 @@ export const cs: Record<TranslationKey, string> = {
   'coding.checklist.note': 'Zaškrtni každou položku, až to tvoje aplikace opravdu umí, a pak odevzdej.',
   'coding.verdict.passed': 'Splněno',
   'coding.verdict.failed': 'Ještě ne',
+  'coding.verdict.hiddenFailed': 'Některé skryté testy neprošly. Nestačí splnit viditelné příklady: zkontroluj všechny formáty vstupu a okrajové případy popsané v zadání.',
   'coding.verdict.error': 'Chyba',
   'coding.verdict.timeout': 'Vypršel čas',
   'coding.verdict.xp': '+{xp} XP',

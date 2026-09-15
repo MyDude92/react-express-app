@@ -65,6 +65,11 @@ stage drafts always take priority. Legacy stage IDs 1–3 remain unchanged.
 
 ## Playground layout
 
+The task description spans the full width above the playground. Editor and
+results share one stretched grid row and scroll together with the page; the
+results panel is never sticky over the action bar. Hints start closed on each
+visit and are revealed only through Hint/Next hint, ignoring old saved counts.
+
 Run/Submit/Format/Reset and Hint/Next hint/Solution/Skip share a compact bottom
 action bar spanning the playground width. Focus and the report flag remain right-aligned. Revealed hints form
 an ordered list after the controls. The editor's desktop minimum height is

@@ -46,12 +46,21 @@ it('disables idle/empty formatting and enables it only for a real formatting cha
 it('Reset clears exhausted hints even when the code is unchanged', async () => {
   localStorage.setItem('devshark:coding:hints:js-test-editor', '20');
   mount();
+  expect(screen.queryByText('Use a function.')).toBeNull();
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 61_000);
+  fireEvent.change(screen.getByLabelText('Test editor'), {target:{value:'const one = () => 2;'}});
+  fireEvent.click(screen.getByRole('button',{name:'Hint'}));
+  expect(screen.getByText('Use a function.')).toBeVisible();
+  fireEvent.click(screen.getByRole('button',{name:'Next hint'}));
+  clock.mockRestore();
+  fireEvent.change(screen.getByLabelText('Test editor'), {target:{value:task.starter}});
   const reset = screen.getByRole('button', { name: 'Reset' });
   expect(reset).toBeEnabled();
   fireEvent.click(reset);
   const dialog = screen.getByRole('alertdialog', { name: 'Reset' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Reset' }));
-  await waitFor(() => expect(localStorage.getItem('devshark:coding:hints:js-test-editor')).toBe('0'));
+  await waitFor(() => expect(screen.queryByText('Use a function.')).toBeNull());
+  expect(screen.getByRole('button',{name:'Hint'})).toBeInTheDocument();
   expect(reset).toBeDisabled();
 });
 
@@ -71,6 +80,11 @@ it('uses a visible, accessible branded loading status', () => {
 it('groups all learning controls below the editor with revealed hints after the bar', () => {
   localStorage.setItem('devshark:coding:hints:js-test-editor', '1');
   render(<MemoryRouter><LanguageProvider><CodingWorkbench initialCode={null} task={task} session="test-session" locked={null} signedIn mode="section" /></LanguageProvider></MemoryRouter>);
+  expect(screen.queryByText('Use a function.')).toBeNull();
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 61_000);
+  fireEvent.change(screen.getByLabelText('Test editor'), {target:{value:'const one = () => 2;'}});
+  fireEvent.click(screen.getByRole('button',{name:'Hint'}));
+  clock.mockRestore();
   const run = screen.getByRole('button',{name:'Run'});
   const bar = run.closest('.cd-editor-actions')!;
   expect(within(bar as HTMLElement).getByRole('button',{name:'Solution'})).toBeInTheDocument();
@@ -81,6 +95,10 @@ it('groups all learning controls below the editor with revealed hints after the 
   expect(hint.closest('li')).toBeInTheDocument();
   expect(bar.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(run.closest('.cd-pane--task')).toBeNull();
+  const grid = bar.closest('.cd-workbench__grid')!;
+  expect(grid.querySelector('.cd-pane--task')).toBeNull();
+  expect(grid.querySelector('.cd-pane--editor')?.parentElement).toBe(grid);
+  expect(grid.querySelector('.cd-pane--output')?.parentElement).toBe(grid);
   expect(screen.getByRole('button',{name:/Report a problem/}).closest('.cd-actions--utility')).toBeInTheDocument();
 });
 

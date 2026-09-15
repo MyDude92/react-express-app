@@ -1909,6 +1909,7 @@ export const en = {
   'coding.checklist.note': 'Tick every item once your app really does it, then submit.',
   'coding.verdict.passed': 'Passed',
   'coding.verdict.failed': 'Not yet',
+  'coding.verdict.hiddenFailed': 'Some hidden checks failed. Passing the visible examples is not enough: check all input formats and edge cases described in the task.',
   'coding.verdict.error': 'Error',
   'coding.verdict.timeout': 'Timed out',
   'coding.verdict.xp': '+{xp} XP',

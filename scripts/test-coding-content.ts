@@ -47,6 +47,14 @@ async function main() {
   const failures: string[] = [];
   const fail = (message: string) => { failures.push(message); };
 
+  // Optional whitespace must be exercised publicly and graded consistently.
+  const calculator = CODING_TASKS.find(task => task.id === 'js-evolving-calculator-1')!;
+  const calculatorChecks = [...calculator.tests!, ...solutionFor(calculator.id)!.hiddenTests!];
+  const calculatorRun = await runInSandbox({code:'function calculate(s) { return s.split("+").reduce((sum, value) => sum + Number(value), 0); }', calls:calculatorChecks.map(test=>test.call), expectations:calculatorChecks.map(test=>test.expected)});
+  assert.ok(allPassed(calculatorRun), 'valid addition must pass visible and hidden server checks');
+  const spacingBug = await runInSandbox({code:'function calculate(s) { return s.trim().split(/\\s+/).filter(value => value !== "+").reduce((sum, value) => sum + Number(value), 0); }', calls:calculator.tests!.map(test=>test.call), expectations:calculator.tests!.map(test=>test.expected)});
+  assert.ok(!allPassed(spacingBug), 'visible tests must expose space-dependent tokenization');
+
   assert.ok(EVOLVING_CHALLENGES.length >= 10, 'at least ten evolving projects');
   const stageIds = EVOLVING_CHALLENGES.flatMap(project => [...project.stages]);
   assert.equal(new Set(stageIds).size, stageIds.length, 'unique stable stage IDs');

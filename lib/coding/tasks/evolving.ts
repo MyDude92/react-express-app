@@ -26,7 +26,9 @@ const SPECS: Record<string, Spec> = {
     ],
     hints: [text('Split on + and accumulate numeric values.', 'Rozděl vstup podle + a sečti číselné hodnoty.'), text('Separate parsing a sum from parsing a product.', 'Odděl parsování součtu od parsování součinu.'), text('Use recursive descent: expression → term → unary → number or parenthesized expression. Verify every character was consumed.', 'Použij rekurzivní sestup: výraz → člen → unární operace → číslo nebo výraz v závorkách. Ověř spotřebování všech znaků.')],
     tests: [
-      [test('calculate("1 + 2")', 3), test('calculate("0")', 0), test('calculate(" 12 + 30 + 5 ")', 47), test('calculate("999 + 1")', 1000)],
+      [test('calculate("1 + 2")', 3), test('calculate("0")', 0), test('calculate(" 12 + 30 + 5 ")', 47), test('calculate("999 + 1")', 1000),
+        {...test('calculate("2+3+4")', 9), label: text('Whitespace is optional: no spaces', 'Mezery jsou volitelné: bez mezer')},
+        {...test('calculate("7 +8+ 9")', 24), label: text('Whitespace is optional: mixed spacing', 'Mezery jsou volitelné: různé rozestupy')}],
       [test('calculate("1 + 2 / 9 * 4")', 1.8888888888888888), test('calculate("8 / 2 * 3")', 12), test('calculate("10 - 3 - 2")', 5), test('calculate("1.5 * 2 + 4")', 7)],
       [test('calculate("-(2+3)*4")', -20), test('calculate("2*(3+(4/2))")', 10), test('calculate("1 +")', null), test('calculate("2 / (3-3)")', null), test('calculate("2x3")', null), test('calculate("")', null), test('calculate("1 2")', null), test('calculate("--2")', 2)],
     ],

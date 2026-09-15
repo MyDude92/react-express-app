@@ -49,7 +49,6 @@ type Tab = 'results' | 'types' | 'console' | 'preview' | 'resources' | 'approach
 type Phase = 'idle' | 'running' | 'submitting';
 
 const DRAFT_DEBOUNCE_MS = 900;
-const hintsKey = (id: string) => `devshark:coding:hints:${id}`;
 // Layout is a preference of the person, not of the task, and it is not their
 // work: it lives on the device beside the drafts but under its own key, so
 // clearing one never touches the other.
@@ -115,7 +114,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
   const [verdict, setVerdict] = useState<CodingVerdictResponse | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>(isReact ? 'preview' : 'results');
-  const [hintsTaken, setHintsTaken] = useState<number>(() => readJSON<number>(hintsKey(task.id), 0));
+  const [hintsTaken, setHintsTaken] = useState(0);
   const [confirming, setConfirming] = useState<'reset' | 'reveal' | null>(null);
   const [solution, setSolution] = useState<string | null>(null);
   const [checked, setChecked] = useState<boolean[]>(() => (task.checklist?.en ?? []).map(() => false));
@@ -169,7 +168,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
     return () => window.clearTimeout(timer);
   }, [code, onDraft]);
 
-  useEffect(() => { writeJSON(hintsKey(task.id), hintsTaken); }, [hintsTaken, task.id]);
   useEffect(() => { writeJSON(LAYOUT_KEY, layout); }, [layout]);
   useEffect(() => { if (verdict) verdictRef.current?.focus(); }, [verdict]);
 
@@ -629,6 +627,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
         <span>{t(`coding.verdict.${verdict.verdict}` as never)}</span>
         {verdict.xpAwarded > 0 && <span className="cd-verdict__xp">{t('coding.verdict.xp', { xp: verdict.xpAwarded })}</span>}
       </h3>
+      {verdict.verdict === 'failed' && verdict.hidden && verdict.hidden.passed < verdict.hidden.total && <p className="cd-verdict__row">{t('coding.verdict.hiddenFailed')}</p>}
       {verdict.puzzle ? (
         <>
           <p className="cd-verdict__row">{t(verdict.puzzle.accepted ? 'coding.puzzle.accepted' : 'coding.puzzle.rejected')}</p>
@@ -675,11 +674,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
       onKeyDown={onKeyDown}
     >
       <span className="cd-visually-hidden" role="status" aria-live="polite">{announcement}</span>
-      <div
-        className="cd-workbench__grid"
-        style={{ ['--cd-split' as string]: `${layout.split}%` }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
           <section className="cd-pane cd-pane--task" aria-labelledby={`${baseId}-title`}>
             <div className="cd-pane__head">
               <Kicker>{evolution ? t('coding.evolving.stage', { n: evolution.index + 1, total: evolution.challenge.stages.length }) : <>{trackLabel} · {tierLabel}{task.level > 0 ? ` · ${t('coding.level', { n: task.level })}` : ''}</>}</Kicker>
@@ -704,6 +698,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             {!signedIn && mode === 'section' && <p className="cd-note">{t('coding.signInHint')}</p>}
           </section>
 
+      <div className="cd-workbench__grid" style={{ ['--cd-split' as string]: `${layout.split}%` }}>
           {puzzleMode && task.puzzle && (
             <section className="cd-pane cd-pane--editor">
               <CodePuzzle puzzle={task.puzzle} busy={busy} onSubmit={(order) => void submitOrder(order)} />
@@ -729,8 +724,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             </div>
 
           </section>
-        </div>
-
         {/* A real separator: it takes focus, arrows move it, Home and End go to
             the limits and Enter restores the default. It is hidden below the
             two-column breakpoint, where there is nothing to split. */}

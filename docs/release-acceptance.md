@@ -1,5 +1,25 @@
 # Release acceptance matrix
 
+## Workbench layout, hints and calculator feedback repair — 2026-09-15
+
+The full-width brief now precedes a shared editor/results grid row. Both panes
+stretch to the same height and scroll with the page. Removing sticky positioning
+prevents results from overlaying the controls; explicitly hidden panes remain
+hidden despite the flex display rule. Hints start at zero on every mount rather
+than restoring old localStorage counts. Regression checks verify closed hints,
+one-click reveal, reset, and sibling editor/results placement.
+
+The reported stage-1 hidden check requires a valid sum without spaces. The
+prompt already allows optional whitespace. Two labeled visible tests now cover
+unspaced and mixed-spacing input, and hidden-check failures have EN/CS explanatory
+text. Server sandbox regressions prove that valid addition passes all visible
+and hidden cases while space-dependent tokenization fails publicly.
+
+Production build, API and tooling types, launch contracts, 18 client tests,
+all 323 task content/reference-solution contracts, both production dependency
+audits (zero vulnerabilities), and diff checks passed. Local responsive checking
+remains blocked by missing Chrome/Chromium.
+
 ## Activity-only application scrollbars — 2026-09-15
 
 Native scrollbar tracks and idle thumbs are transparent across the app. A

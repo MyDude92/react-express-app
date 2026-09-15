@@ -231,9 +231,9 @@
      neither pane can be dragged away entirely. */
   .cd-workbench__grid {
     grid-template-columns: minmax(0, var(--cd-split, 58%)) 10px minmax(0, 1fr);
-    align-items: start;
+    align-items: stretch;
   }
-  .cd-pane--output { position: sticky; top: 8px; }
+  .cd-pane--output { position: static; }
   .cd-splitter {
     align-self: stretch;
     min-height: 120px;
@@ -272,6 +272,12 @@
   border: 1px solid var(--ss-card-line);
 }
 .cd-pane--task { gap: 14px; }
+.cd-pane { min-width: 0; }
+.cd-pane[hidden] { display: none; }
+.cd-pane--editor > div { display: flex; flex: 1; flex-direction: column; }
+.cd-pane--editor > div > div { display: flex; flex: 1; min-width: 0; }
+.cd-pane--editor .cd-editor { flex: 1; background: var(--cd-editor-bg); }
+.cd-workbench .cd-panel pre, .cd-workbench .cd-console { max-height: none; }
 .cd-pane__head { display: flex; flex-direction: column; gap: 6px; }
 .cd-pane__meta { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 0.85rem; color: var(--color-text-secondary); }
 .cd-prompt { margin: 0; line-height: 1.6; max-width: 70ch; }
