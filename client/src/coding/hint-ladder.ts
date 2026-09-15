@@ -25,7 +25,8 @@ export function ladderRungs(task: PlayableCodingTask, lang: Lang): LadderRung[] 
   ];
   if (task.skeleton) rungs.push({ kind: 'skeleton', body: task.skeleton });
   const docs = docsFor(task.focus);
-  rungs.push({ kind: 'docs', tag: docs.tag, url: docs.url });
+  const reference = task.references?.[0];
+  rungs.push({ kind: 'docs', tag: reference ? reference.title[lang] || reference.title.en : docs.tag, url: reference?.url ?? docs.url });
   return rungs;
 }
 

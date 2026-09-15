@@ -689,6 +689,14 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
               )}
             </div>
             <Prompt className="cd-prompt" text={L(task.prompt)} />
+            {Boolean(task.previousRequirements?.length) && <details>
+              <summary>{t('coding.evolving.previous')}</summary>
+              {task.previousRequirements!.map((brief,index) => <Prompt key={index} className="cd-prompt" text={L(brief)} />)}
+            </details>}
+            {Boolean(task.references?.length) && <nav aria-label={t('coding.evolving.references')}>
+              <h3>{t('coding.evolving.references')}</h3>
+              <ul className="cd-stage-references">{task.references!.map(ref => <li key={ref.url}><a href={ref.url} target="_blank" rel="noreferrer">{L(ref.title)}</a></li>)}</ul>
+            </nav>}
             {/* Beside the brief, so nothing is injected into code the learner
                 is reading or about to run. */}
             <TermsBar texts={[L(task.prompt), L(task.title)]} domain={glossaryDomainFor(task.track)} />
@@ -696,27 +704,42 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             {task.api && <p className="cd-api"><code>{task.api.method} {task.api.url}</code><br />{L(task.api.note)}</p>}
             {locked && <p className="cd-note cd-note--warn">{t('coding.lockedTask')} {t(`coding.lock.${locked}` as never)}</p>}
             {!signedIn && mode === 'section' && <p className="cd-note">{t('coding.signInHint')}</p>}
+          </section>
 
-            <div className="cd-hints" aria-label={t('coding.hint')}>
-              {shownHint && (
-                <div className="cd-hint cd-hint--failure" role="status">
-                  <span className="cd-hint__label">
-                    {t(`coding.failure.${shownHint.category}` as never)}
-                  </span>
-                  <Prompt text={shownHint.body[lang] || shownHint.body.en} />
-                </div>
-              )}
-              {rungs.slice(0, taken).map((rung, index) => (
-                <div key={index} className="cd-hint">
-                  <span className="cd-hint__label">
-                    {rung.kind === 'hint' ? t('coding.hint.hint', { n: rung.index + 1 }) : rung.kind === 'approach' ? t('coding.hint.approach', { n: rung.index + 1 }) : rung.kind === 'skeleton' ? t('coding.hint.skeleton') : t('coding.hint.docs')}
-                  </span>
-                  {rung.kind === 'skeleton' ? <pre>{rung.body}</pre>
-                    : rung.kind === 'docs' ? <><span>{t('coding.hint.docsBody', { tag: rung.tag })}</span><br /><a href={rung.url} target="_blank" rel="noreferrer">{t('coding.hint.docsLink', { tag: rung.tag })}</a></>
-                    : <Prompt text={rung.body} />}
-                </div>
-              ))}
+          {puzzleMode && task.puzzle && (
+            <section className="cd-pane cd-pane--editor">
+              <CodePuzzle puzzle={task.puzzle} busy={busy} onSubmit={(order) => void submitOrder(order)} />
+              {submitError && <p className="cd-note cd-note--error" role="alert">{submitError}</p>}
+            </section>
+          )}
+
+          {pendingOnDesktop && (
+            <section className="cd-pane cd-pane--editor">
+              {/* No editor, no puzzle, and no pass: the task waits. The draft is
+                  kept exactly as it is, and nothing about this marks it done. */}
+              <p className="cd-note cd-note--warn" role="status">{t('coding.pendingDesktop')}</p>
+              <p className="cd-shortcuts">{t('coding.pendingDesktopNote')}</p>
+            </section>
+          )}
+
+          <section className="cd-pane cd-pane--editor">
+            <div hidden={puzzleMode || pendingOnDesktop}>
+            <label className="cd-editor-label" htmlFor={`${baseId}-editor`}>{t('coding.editorLabel')}</label>
+            <div id={`${baseId}-editor`}>
+              <Editor minHeight={480} value={code} onChange={onCodeChange} track={task.track} ariaLabel={t('coding.editorLabel')} readOnly={Boolean(solution) && mode === 'lesson'} />
+            </div>
+            </div>
+            <div className="cd-editor-actions">
               <div className="cd-actions">
+                {!puzzleMode && !pendingOnDesktop && <>
+                <button type="button" className="cd-btn" onClick={() => void runLocal()} disabled={busy}>
+                  {phase === 'running' ? (runPhase === 'compiling' ? t('coding.compiling') : t('coding.running')) : t('coding.run')}
+                </button>
+                <SwimCta dir={1} onClick={() => void submit()} disabled={submitDisabled} label={phase === 'submitting' ? t('coding.submitting') : t('coding.submit')} />
+                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={formatDisabled}>{t('coding.format')}</button>
+                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={resetDisabled}>{t('coding.reset')}</button>
+                </>}
+
                 <button type="button" className="cd-btn" onClick={takeHint} disabled={!nextRung || !attemptReady || Boolean(solution)} aria-describedby={`${baseId}-hint-note`}>
                   {nextRung ? t('coding.hintNext', { taken: taken + 1, total: rungs.length }) : t('coding.hintExhausted')}
                 </button>
@@ -731,7 +754,47 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                   </button>
                 )}
               </div>
-
+              <div className="cd-actions cd-actions--utility">
+                <button
+                  type="button"
+                  className="cd-btn cd-btn--quiet"
+                  aria-pressed={layout.focus}
+                  onClick={() => setLayout((current) => ({ ...current, focus: !current.focus }))}
+                >
+                  {t(layout.focus ? 'coding.layout.focusOff' : 'coding.layout.focusOn')}
+                </button>
+                <button
+                  type="button"
+                  className="cd-btn cd-btn--icon cd-btn--flag"
+                  aria-label={t('coding.reportTask')}
+                  title={t('coding.reportTask')}
+                  onClick={() => setReportOpen(true)}
+                >
+                  <FlagIcon size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="cd-hints" aria-label={t('coding.hint')}>
+              {shownHint && (
+                <div className="cd-hint cd-hint--failure" role="status">
+                  <span className="cd-hint__label">
+                    {t(`coding.failure.${shownHint.category}` as never)}
+                  </span>
+                  <Prompt text={shownHint.body[lang] || shownHint.body.en} />
+                </div>
+              )}
+              <ol className="cd-hint-list">
+              {rungs.slice(0, taken).map((rung, index) => (
+                <li key={index} className="cd-hint">
+                  <span className="cd-hint__label">
+                    {rung.kind === 'hint' ? t('coding.hint.hint', { n: rung.index + 1 }) : rung.kind === 'approach' ? t('coding.hint.approach', { n: rung.index + 1 }) : rung.kind === 'skeleton' ? t('coding.hint.skeleton') : t('coding.hint.docs')}
+                  </span>
+                  {rung.kind === 'skeleton' ? <pre>{rung.body}</pre>
+                    : rung.kind === 'docs' ? <><span>{t('coding.hint.docsBody', { tag: rung.tag })}</span><br /><a href={rung.url} target="_blank" rel="noreferrer">{t('coding.hint.docsLink', { tag: rung.tag })}</a></>
+                    : <Prompt text={rung.body} />}
+                </li>
+              ))}
+              </ol>
               {/* Skipping records why, and nothing else. It is not a pass: a
                   task the learner's level requires stays required and says so,
                   and nothing here unlocks anything. */}
@@ -801,58 +864,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                   <p className="cd-shortcuts">{t('coding.solutionNote')}</p>
                 </div>
               )}
-            </div>
-          </section>
-
-          {puzzleMode && task.puzzle && (
-            <section className="cd-pane cd-pane--editor">
-              <CodePuzzle puzzle={task.puzzle} busy={busy} onSubmit={(order) => void submitOrder(order)} />
-              {submitError && <p className="cd-note cd-note--error" role="alert">{submitError}</p>}
-            </section>
-          )}
-
-          {pendingOnDesktop && (
-            <section className="cd-pane cd-pane--editor">
-              {/* No editor, no puzzle, and no pass: the task waits. The draft is
-                  kept exactly as it is, and nothing about this marks it done. */}
-              <p className="cd-note cd-note--warn" role="status">{t('coding.pendingDesktop')}</p>
-              <p className="cd-shortcuts">{t('coding.pendingDesktopNote')}</p>
-            </section>
-          )}
-
-          <section className="cd-pane cd-pane--editor" hidden={puzzleMode || pendingOnDesktop}>
-            <label className="cd-editor-label" htmlFor={`${baseId}-editor`}>{t('coding.editorLabel')}</label>
-            <div id={`${baseId}-editor`}>
-              <Editor value={code} onChange={onCodeChange} track={task.track} ariaLabel={t('coding.editorLabel')} readOnly={Boolean(solution) && mode === 'lesson'} />
-            </div>
-            <div className="cd-editor-actions">
-              <div className="cd-actions">
-                <button type="button" className="cd-btn" onClick={() => void runLocal()} disabled={busy}>
-                  {phase === 'running' ? (runPhase === 'compiling' ? t('coding.compiling') : t('coding.running')) : t('coding.run')}
-                </button>
-                <SwimCta dir={1} onClick={() => void submit()} disabled={submitDisabled} label={phase === 'submitting' ? t('coding.submitting') : t('coding.submit')} />
-                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={formatDisabled}>{t('coding.format')}</button>
-                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={resetDisabled}>{t('coding.reset')}</button>
-              </div>
-              <div className="cd-actions cd-actions--utility">
-                <button
-                  type="button"
-                  className="cd-btn cd-btn--quiet"
-                  aria-pressed={layout.focus}
-                  onClick={() => setLayout((current) => ({ ...current, focus: !current.focus }))}
-                >
-                  {t(layout.focus ? 'coding.layout.focusOff' : 'coding.layout.focusOn')}
-                </button>
-                <button
-                  type="button"
-                  className="cd-btn cd-btn--icon cd-btn--flag"
-                  aria-label={t('coding.reportTask')}
-                  title={t('coding.reportTask')}
-                  onClick={() => setReportOpen(true)}
-                >
-                  <FlagIcon size={18} />
-                </button>
-              </div>
             </div>
             {confirming === 'reset' && (
               <div className="cd-note cd-note--warn" role="alertdialog" aria-label={t('coding.reset')}>

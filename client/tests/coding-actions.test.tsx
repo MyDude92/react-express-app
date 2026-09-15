@@ -5,6 +5,9 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { CodingWorkbench } from '../src/coding/CodingWorkbench';
 import LoadingScreen from '../src/components/LoadingScreen';
 import type { PlayableCodingTask } from '../../shared/coding-catalog';
+import { FULLSTACK_REACT_SCAFFOLD, prepareEvolvingDraft } from '../../shared/coding-fullstack-support';
+import { EVOLVING_CHALLENGES, evolvingTaskTrack } from '../../shared/evolving';
+import { formatCode } from '../src/coding/runner/format';
 
 vi.mock('../src/coding/Editor', () => ({
   Editor: ({ value, onChange }: { value: string; onChange: (value: string) => void }) =>
@@ -60,4 +63,35 @@ it('uses a visible, accessible branded loading status', () => {
   render(<LoadingScreen label="Loading task…" />);
   expect(screen.getByRole('status')).toHaveTextContent('Loading task…');
   expect(screen.getByText('Loading task…')).toBeVisible();
+});
+
+it('groups all learning controls below the editor with revealed hints after the bar', () => {
+  localStorage.setItem('devshark:coding:hints:js-test-editor', '1');
+  render(<MemoryRouter><LanguageProvider><CodingWorkbench task={task} session="test-session" locked={null} signedIn mode="section" /></LanguageProvider></MemoryRouter>);
+  const run = screen.getByRole('button',{name:'Run',exact:true});
+  const bar = run.closest('.cd-editor-actions')!;
+  expect(within(bar as HTMLElement).getByRole('button',{name:'Show the solution',exact:true})).toBeInTheDocument();
+  expect(within(bar as HTMLElement).getByRole('button',{name:/Skip/i})).toBeInTheDocument();
+  const hint = screen.getByText('Use a function.');
+  expect(hint.closest('li')).toBeInTheDocument();
+  expect(bar.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(run.closest('.cd-pane--task')).toBeNull();
+  expect(screen.getByRole('button',{name:/Report a problem/}).closest('.cd-actions--utility')).toBeInTheDocument();
+});
+
+it('keeps FullStack routes on real graders and preserves code across the React transition', () => {
+  for (const project of EVOLVING_CHALLENGES.filter(p=>p.category==='fullstack')) {
+    expect(project.stages).toHaveLength(8);
+    expect(project.stages.map(evolvingTaskTrack)).toEqual(['javascript','typescript','typescript','typescript','react','react','react','react']);
+  }
+  const saved = 'function normalizeInput(value) { return null; }';
+  expect(prepareEvolvingDraft(saved,'fullstack',4)).toBe(saved+FULLSTACK_REACT_SCAFFOLD);
+  expect(prepareEvolvingDraft(saved,'fullstack',5)).toBe(saved);
+  expect(prepareEvolvingDraft(saved,undefined,4)).toBe(saved);
+});
+
+it('formats TSX without discarding TypeScript annotations', async () => {
+  const formatted=await formatCode('type Item={name:string};export default function App(){return <p>Hello</p>}', 'react');
+  expect(formatted).toContain('type Item = { name: string };');
+  expect(formatted).toContain('<p>Hello</p>');
 });

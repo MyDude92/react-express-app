@@ -24,6 +24,7 @@
 import { transform } from 'sucrase';
 import { asRunnableModule, FETCH_STUB_SOURCE } from '../../shared/coding-react-support';
 import { createMiniJest, type MiniJestRun } from '../../shared/coding-mini-jest';
+import { LOCAL_FETCH_SOURCE } from '../../shared/coding-fullstack-support';
 
 /** How long one suite may take before it is called a timeout. */
 export const REACT_SUITE_TIMEOUT_MS = 5_000;
@@ -100,7 +101,7 @@ async function ensureRuntime(): Promise<Runtime> {
 
 /** The same compile the browser frame performs, so both agree on the syntax. */
 const compile = (source: string): string =>
-  transform(source, { transforms: ['jsx', 'imports'], jsxRuntime: 'automatic', production: true, filePath: 'file.jsx' }).code;
+  transform(source, { transforms: ['typescript', 'jsx', 'imports'], jsxRuntime: 'automatic', production: true, filePath: 'file.tsx' }).code;
 
 function runModule(source: string, resolve: (request: string) => unknown, extra: Record<string, unknown> = {}) {
   const module = { exports: {} as Record<string, unknown> };
@@ -136,6 +137,7 @@ export async function runReactSuite(input: { suite: string; appSource: string })
       return appModule;
     }
     if (request === './fetchStub' || request === './fetchStub.js') return runModule(FETCH_STUB_SOURCE, resolve);
+    if (request === './localFetch') return runModule(LOCAL_FETCH_SOURCE, resolve);
     if (request in modules) return modules[request];
     throw new Error(`Cannot find module '${request}'`);
   };

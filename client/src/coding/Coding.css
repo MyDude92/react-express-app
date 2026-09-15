@@ -203,11 +203,13 @@
 @media (max-width: 1023px) {
   .cd-splitter { display: none; }
 }
-/* Focus mode: the task brief and the hint ladder step back so the editor and
+/* Focus mode: the task brief steps back so the editor and
    its results have the room. Nothing is removed — the brief is one click away
    again — and the reduced-motion rules are untouched because nothing moves. */
 .cd-workbench--focus .cd-pane--task { display: none; }
-.cd-workbench--focus .cd-workbench__grid { grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr); }
+@media (min-width: 1024px) {
+  .cd-workbench--focus .cd-workbench__grid { grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr); }
+}
 /* Long results and long translated labels scroll inside their own pane rather
    than pushing the page sideways. */
 .cd-panel { overflow-x: auto; }
@@ -528,3 +530,6 @@
 /* The format tag reads differently from a technique tag: it says what you are
    being asked to do, not what the task is about. */
 .cd-tag--format { border-color: var(--brand-accent); color: var(--brand-accent); }
+.cd-hint-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style-position: inside; }
+.cd-hint-list:empty { display: none; }
+.cd-stage-references { display: flex; flex-wrap: wrap; gap: 8px 20px; padding-left: 20px; }

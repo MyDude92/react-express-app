@@ -13,6 +13,7 @@ import * as RTL from '@testing-library/react';
 import { transform } from 'sucrase';
 import { createMiniJest } from '../../shared/coding-mini-jest';
 import { asRunnableModule, FETCH_STUB_SOURCE } from '../../shared/coding-react-support';
+import { LOCAL_FETCH_SOURCE } from '../../shared/coding-fullstack-support';
 
 interface RunMessage {
   type: 'run';
@@ -62,7 +63,7 @@ const forward = (level: 'log' | 'info' | 'warn' | 'error' | 'debug') => {
 (['log', 'info', 'warn', 'error', 'debug'] as const).forEach(forward);
 
 const compile = (source: string): string =>
-  transform(source, { transforms: ['jsx', 'imports'], jsxRuntime: 'automatic', production: true, filePath: 'file.jsx' }).code;
+  transform(source, { transforms: ['typescript', 'jsx', 'imports'], jsxRuntime: 'automatic', production: true, filePath: 'file.tsx' }).code;
 
 const BUILTINS: Record<string, unknown> = {
   react: React,
@@ -80,7 +81,7 @@ function makeRequire(files: Record<string, string>, extra: Record<string, unknow
     if (request in BUILTINS) return BUILTINS[request];
     if (request === './fetchStub' || request === './fetchStub.js') return {};
     const key = request.replace(/^\.\//, '/').replace(/\.(jsx?|tsx?)$/, '');
-    const file = files[`${key}.js`] ?? files[`${key}.jsx`] ?? files[key];
+    const file = key === '/localFetch' ? LOCAL_FETCH_SOURCE : files[`${key}.js`] ?? files[`${key}.jsx`] ?? files[key];
     if (file === undefined) throw new Error(`Cannot find module '${request}'`);
     if (cache.has(key)) return cache.get(key);
     const module = { exports: {} as Record<string, unknown> };

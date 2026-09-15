@@ -1,6 +1,9 @@
 # Evolving challenges and Collection
 
-Ten optional projects, each with three cumulative stages, are listed on Coding.
+Ten optional projects, each with five cumulative stages, are listed on Coding.
+FullStack adds three applications with eight stages each (74 evolving stages).
+Each stage has an individual EN/CS brief, targeted official reference links,
+and a collapsed list of the prior requirements. Tests remain cumulative.
 The existing task catalog, browser runners, server graders and hint/reveal
 controls handle all stages. JavaScript/TypeScript have hidden edge cases;
 TypeScript also has positive and negative compiler assertions. React uses the
@@ -18,6 +21,55 @@ existing server Testing Library harness, never a client-supplied pass.
 | React | Task board | Add/toggle → filter/delete → immutable undo/redo |
 | React | Product explorer | Search → sort/page → cross-page selection |
 | React | Form wizard | Email validation → reversible steps → consent/submission/reset |
+
+Stages four and five extend each existing project:
+
+| Project | Stage 4 | Stage 5 |
+| --- | --- | --- |
+| Expression engine | Named variables | Ordered assignment programs |
+| Query pipeline | Group aggregation | Stable inner/left joins |
+| Event bus | Pause/resume FIFO dispatch | Bounded event replay |
+| Dependency planner | Weighted critical path | Incremental rebuild impact |
+| Result pipeline | Success/error partition | Recovery and lazy sequences |
+| Typed state store | Derived subscriptions/disposal | Atomic transactions/rollback |
+| Schema validator | Dynamic record validation | Union branches and tuples |
+| Task board | Undoable bulk actions | Stable-ID reordering/history |
+| Product explorer | Price facets | Quantities and cart totals |
+| Form wizard | Conditional business branch | Validated persistent drafts |
+
+## FullStack
+
+Team task planner, Stockroom manager and Workshop booking each use eight stages:
+JavaScript input validation; TypeScript models and immutable transitions;
+typed GET/POST API; version-checked PATCH/DELETE; React fetch/loading/retry;
+creation form; domain action with conflict recovery; filtered pagination/deletion.
+Hours logged, stock sold and seats booked all use server-side non-negative
+quantity validation and optimistic concurrency.
+
+The category is separate from the grader track. Stage 1 uses JavaScript,
+2–4 use the TypeScript runtime/compiler grader, and 5–8 use the TSX-capable
+React behavioral grader. The latter transpiles types; it does not claim a full
+React TypeScript compiler check. Links resolve the actual stage track.
+
+The learner writes the API handler and React code. `./localFetch` is a shared,
+network-free transport that calls that handler and serializes responses. It
+contains no API answers. The default preview runs against the learner's API;
+tests also inject it, including modified state, failures and version conflicts.
+These are local full-stack exercises, not deployed servers, production auth,
+databases, or external-network sandboxes. API data resets per mounted app;
+the learner's code and stage completion are saved to their account.
+
+The first React stage appends an empty React scaffold to the preceding typed
+API draft; it does not replace the API with a reference solution. Existing
+stage drafts always take priority. Legacy stage IDs 1–3 remain unchanged.
+
+## Playground layout
+
+Run/Submit/Format/Reset and Hints/Show solution/Skip share the bottom action
+bar. Focus mode and the report flag remain right-aligned. Revealed hints form
+an ordered list after the controls. The editor's desktop minimum height is
+480px. Common learning controls remain reachable for narrow/puzzle layouts.
+Focus mode only uses split columns at desktop widths.
 
 `shared/evolving.ts` owns ordered stage IDs and resume/unlock calculations.
 Each stage reuses `coding_progress` and `coding_drafts`, so no new table or
@@ -51,10 +103,6 @@ Verification: `npm run test:coding` proves all reference solutions, rejects
 untouched starters, checks EN/CS parity and answer-free payloads, and asserts
 stable stage IDs, sequential unlocks, resume positions and cumulative tests.
 
-Local verification (2026-09-15): API typecheck, launch contracts, production
-build, all 279 reference solutions, 13 client tests, unused-code regression
-check and whitespace check pass. Both production dependency audits report zero
-vulnerabilities. Responsive browser verification could not run: no local
-Chrome/Chromium executable is installed. Live cross-device persistence and
-visual layouts still require authenticated browser acceptance; unit/content
-checks do not establish that acceptance.
+Release verification is recorded in `docs/release-acceptance.md`. Live
+cross-device persistence and visual layouts require authenticated browser
+acceptance; unit/content checks do not establish that acceptance.

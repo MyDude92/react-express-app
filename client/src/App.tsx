@@ -57,6 +57,7 @@ const Collection = lazy(() => import('./components/Collection'));
 const TypingRacer = lazy(() => import('./components/TypingRacer'));
 const CodingHome = lazy(() => import('./components/coding/CodingSection').then((m) => ({ default: m.CodingHome })));
 const CodingTrackScreen = lazy(() => import('./components/coding/CodingSection').then((m) => ({ default: m.CodingTrackScreen })));
+const FullStackScreen = lazy(() => import('./components/coding/CodingSection').then((m) => ({ default: m.FullStackScreen })));
 const CodingTaskScreen = lazy(() => import('./components/coding/CodingSection').then((m) => ({ default: m.CodingTaskScreen })));
 const CodingReviewScreen = lazy(() => import('./components/coding/CodingSection').then((m) => ({ default: m.CodingReviewScreen })));
 const GithubSettingsPage = lazy(() => import('./components/coding/GithubSettingsPage').then((m) => ({ default: m.GithubSettingsPage })));
@@ -697,6 +698,7 @@ function App() {
                 <Route path="/roadmap" element={CURRENT_PRODUCT.id === 'devshark' ? <CareerRoadmap /> : <Navigate to="/learn" replace />} />
                 <Route path="/coding" element={CURRENT_PRODUCT.id === 'devshark' ? <CodingHome /> : <Navigate to="/learn" replace />} />
                 <Route path="/coding/review" element={CURRENT_PRODUCT.id === 'devshark' ? <CodingReviewScreen /> : <Navigate to="/learn" replace />} />
+                <Route path="/coding/fullstack" element={CURRENT_PRODUCT.id === 'devshark' ? <FullStackScreen /> : <Navigate to="/learn" replace />} />
                 <Route path="/coding/:track" element={CURRENT_PRODUCT.id === 'devshark' ? <CodingTrackScreen /> : <Navigate to="/learn" replace />} />
                 <Route path="/coding/:track/:taskId" element={CURRENT_PRODUCT.id === 'devshark' ? <CodingTaskScreen /> : <Navigate to="/learn" replace />} />
                 {/* Learning paths are devShark-only, like /coding and /roadmap.

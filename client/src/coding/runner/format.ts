@@ -7,7 +7,7 @@ export async function formatCode(code: string, track: 'javascript' | 'typescript
     import('prettier/plugins/estree'),
   ]);
   return prettier.format(code, {
-    parser: track === 'typescript' ? 'babel-ts' : 'babel',
+    parser: track === 'typescript' || track === 'react' ? 'babel-ts' : 'babel',
     plugins: [babel, estree],
     singleQuote: true,
     semi: true,

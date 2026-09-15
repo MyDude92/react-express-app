@@ -144,6 +144,8 @@ export interface CodingTask {
   title: Localized;
   prompt: Localized;
   starter: string;
+  previousRequirements?: Localized[];
+  references?: { title: Localized; url: string }[];
   skeleton?: string;
   hints: LocalizedList;
   approach?: LocalizedList;
@@ -195,6 +197,8 @@ export interface PlayableCodingTask extends CodingTaskSummary {
   review?: PublicItemReview;
   legacyId?: string;
   prompt: Localized;
+  previousRequirements?: Localized[];
+  references?: { title: Localized; url: string }[];
   starter: string;
   skeleton?: string;
   hints: LocalizedList;

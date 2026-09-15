@@ -1,4 +1,5 @@
 import type { CodingSolution } from '../types';
+import { ADVANCED_SOLUTIONS } from './evolving-advanced';
 
 // Per-stage reference implementations stay on the server. Later capabilities
 // are added when generating the later stage, not revealed by earlier stages.
@@ -70,7 +71,7 @@ const solutions: Record<string, (stage: number) => string> = {
 };
 
 export const EVOLVING_SOLUTIONS: Record<string, CodingSolution> = Object.fromEntries(
-  Object.entries(solutions).flatMap(([id, build]) => [1,2,3].map(stage => [`${id}-${stage}`, {solution: build(stage)}])),
+  Object.entries(solutions).flatMap(([id, build]) => [1,2,3,4,5].map(stage => [`${id}-${stage}`, {solution: build(Math.min(stage,3)) + '\n' + (ADVANCED_SOLUTIONS[id] ?? []).slice(0,Math.max(0,stage-3)).join('\n')} ])),
 );
 
 const hidden: Record<string, [string, unknown][][]> = {
@@ -111,5 +112,5 @@ const hidden: Record<string, [string, unknown][][]> = {
   ],
 };
 for (const [id, stages] of Object.entries(hidden)) {
-  for (let index=0; index<3; index++) EVOLVING_SOLUTIONS[`${id}-${index+1}`].hiddenTests = stages.slice(0,index+1).flat().map(([call,expected])=>({call,expected,edge:true}));
+  for (let index=0; index<5; index++) EVOLVING_SOLUTIONS[`${id}-${index+1}`].hiddenTests = stages.slice(0,index+1).flat().map(([call,expected])=>({call,expected,edge:true}));
 }

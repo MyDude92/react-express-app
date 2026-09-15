@@ -1,5 +1,36 @@
 # Release acceptance matrix
 
+## Evolving / FullStack update — 2026-09-15
+
+This update expands the original ten projects to five stages each and adds
+three eight-stage FullStack apps at `/coding/fullstack`. All 74 stages have
+individual EN/CS descriptions and targeted references. Prior requirements
+remain available; legacy IDs and saved progress are preserved. Help controls
+move below the 480px-minimum desktop editor, with an ordered revealed-hint list.
+
+| Gate | Result |
+| --- | --- |
+| API TypeScript check | Pass |
+| Production app and isolated sandbox builds | Pass |
+| Launch contracts | Pass, including twelve API handlers and answer isolation |
+| Coding content contract | Pass: 323 reference solutions; starters rejected; cumulative stage checks; EN/CS parity; answer-free payloads |
+| Client tests | Pass: 16 tests, including toolbar placement, hint/reset state, TSX formatting and FullStack draft/track transitions |
+| Unused-code regression check | Pass: no new findings |
+| Both production dependency audits | Pass: zero vulnerabilities |
+| Whitespace validation | Pass |
+| Responsive/visual browser sweep | Blocked: `check:responsive` exits because no Chrome/Chromium binary is installed |
+| Authenticated cross-device draft/completion acceptance | Not run: local tests prove transition logic, not live account synchronization |
+
+FullStack API requests execute the learner's own handler through the shared
+network-free adapter. This is an in-memory teaching environment, not a deployed
+backend or a production-auth/database exercise. TypeScript stages 2–4 are
+compiler-checked; React stages transpile TSX and test API/UI behavior. No new
+tables, migrations, database permissions or external network access were added.
+React review preserved semantic controls, accessible names, effect cleanup,
+stable IDs, derived view state and narrow-layout access to learning actions.
+
+## Earlier modernization acceptance
+
 What was verified for the modernization epic, what was not, and why. Every row
 is pass, fail or **not run** — never "should be fine". A row that could not be
 checked in this environment says so and names what would check it.

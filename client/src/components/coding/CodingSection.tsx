@@ -14,7 +14,7 @@ import { DesignRunner } from '../../coding/DesignRunner';
 import { codingKeys, saveCodingDraft, useCodingProgress, useCodingTask } from '../../coding/api';
 import { useBookmarks, useSaveChallenge } from '../../coding/practice';
 import { CODING_INDEX } from '../../../../shared/coding-index';
-import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage } from '../../../../shared/evolving';
+import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage, evolvingTaskTrack } from '../../../../shared/evolving';
 import { SwimCta } from '../landing/LandingKit';
 import {
   CODING_SECTION_TRACKS,
@@ -145,20 +145,20 @@ function TaskRow({ task, status, saved, onSave, saving }: {
 }
 
 /* ── /coding ──────────────────────────────────────────────────────────── */
-function EvolvingGallery({ passed }: { passed: ReadonlySet<string> }) {
+function EvolvingGallery({ passed, fullstack = false }: { passed: ReadonlySet<string>; fullstack?: boolean }) {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
-  return <section aria-labelledby="evolving-title">
-    <Kicker as="h2" id="evolving-title">{t('coding.evolving.title')}</Kicker>
-    <p className="cd-lead">{t('coding.evolving.body')}</p>
-    <div className="cd-tracks">{EVOLVING_CHALLENGES.map(challenge => {
+  return <section aria-labelledby={fullstack ? 'fullstack-title' : 'evolving-title'}>
+    <Kicker as="h2" id={fullstack ? 'fullstack-title' : 'evolving-title'}>{t(fullstack ? 'coding.evolving.fullstack' : 'coding.evolving.title')}</Kicker>
+    <p className="cd-lead">{t(fullstack ? 'coding.evolving.fullstackBody' : 'coding.evolving.body')}</p>
+    <div className="cd-tracks">{EVOLVING_CHALLENGES.filter(challenge => (challenge.category === 'fullstack') === fullstack).map(challenge => {
       const completed = challenge.stages.filter(id => passed.has(id)).length;
       return <article key={challenge.id} className="cd-track">
-        <p>{t(`coding.track.${challenge.track}` as never)}</p>
+        <p>{fullstack ? 'JavaScript · TypeScript · React · API' : t(`coding.track.${challenge.track}` as never)}</p>
         <h3>{challenge.title[lang]}</h3>
         <p>{t('coding.evolving.progress', { n: completed, total: challenge.stages.length })}</p>
         <WaterlineProgress value={100 * completed / challenge.stages.length} label={challenge.title[lang]} />
-        <SwimCta dir={1} label={completed === challenge.stages.length ? t('coding.evolving.complete') : t('coding.continue')} onClick={() => navigate(`/coding/${challenge.track}/${evolvingResume(challenge, passed)}`)} />
+        <SwimCta dir={1} label={completed === challenge.stages.length ? t('coding.evolving.complete') : t('coding.continue')} onClick={() => {const id=evolvingResume(challenge,passed);navigate(`/coding/${evolvingTaskTrack(id)}/${id}`);}} />
       </article>;
     })}</div>
   </section>;
@@ -204,6 +204,7 @@ export function CodingHome() {
         })}
       </section>
       <EvolvingGallery passed={passed} />
+      <Link className="cd-track ss-lift" to="/coding/fullstack"><h2>{t('coding.evolving.fullstack')}</h2><p>{t('coding.evolving.fullstackBody')}</p></Link>
       {/* Ten technique groups, each one a row that says what it is rather than
           a pill that says only its name and a number. The tag count is the
           honest measure of breadth; the sentence is what makes the name mean
@@ -234,6 +235,20 @@ export function CodingHome() {
       </section>
     </div>
   );
+}
+
+export function FullStackScreen() {
+  const { t } = useLanguage();
+  const { isAuthenticated } = useAuth();
+  const progress = useCodingProgress(isAuthenticated);
+  const { passed } = useStatuses(progress.data);
+  if (isAuthenticated && progress.isLoading) return <LoadingScreen label={t('coding.loading')} />;
+  return <div className="cd-page ss-pop">
+    <Link className="cd-link" to="/coding">{t('coding.title')}</Link>
+    <h1>{t('coding.evolving.title')}</h1>
+    {isAuthenticated && progress.isError && <p className="cd-note cd-note--error" role="alert">{t('coding.collections.failed')} <button className="cd-btn" onClick={()=>void progress.refetch()}>{t('coding.retry')}</button></p>}
+    <EvolvingGallery passed={passed} fullstack />
+  </div>;
 }
 
 /* ── /coding/:track ──────────────────────────────────────────────────── */
@@ -462,9 +477,9 @@ export function CodingTaskScreen() {
   const trackTasks = SECTION_INDEX.filter((one) => one.track === data.task.track);
   const next = nextOpenTask(trackTasks, statusOf, data.task.id);
   const nextHref = stage
-    ? stage.next ? `/coding/${stage.challenge.track}/${stage.next}` : null
+    ? stage.next ? `/coding/${evolvingTaskTrack(stage.next)}/${stage.next}` : null
     : next && next.id !== data.task.id ? `/coding/${next.track}/${next.id}` : null;
-  const backHref = `/coding/${data.task.track}`;
+  const backHref = stage?.challenge.category === 'fullstack' ? '/coding/fullstack' : `/coding/${data.task.track}`;
   const localDraft = readString(draftKey(data.task.id));
   const initialCode = localDraft ?? data.draft ?? null;
 
@@ -481,7 +496,7 @@ export function CodingTaskScreen() {
           const available = index === 0 || stage.challenge.stages.slice(0, index).every(prior => progress.data?.tasks[prior]?.status === 'passed');
           const label = t('coding.evolving.stage', { n: index + 1, total: stage.challenge.stages.length });
           return available || id === data.task.id
-            ? <Link key={id} className="cd-btn" aria-current={id === data.task.id ? 'step' : undefined} to={`/coding/${data.task.track}/${id}`}>{progress.data?.tasks[id]?.status === 'passed' ? '✓ ' : ''}{label}</Link>
+            ? <Link key={id} className="cd-btn" aria-current={id === data.task.id ? 'step' : undefined} to={`/coding/${evolvingTaskTrack(id)}/${id}`}>{progress.data?.tasks[id]?.status === 'passed' ? '✓ ' : ''}{label}</Link>
             : <button key={id} className="cd-btn" disabled>{label}</button>;
         })}
       </nav>}

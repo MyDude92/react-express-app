@@ -11,9 +11,11 @@ import { REACT_LOOP_SOLUTIONS } from './react-loops';
 import { JAVASCRIPT_DEBUG_SOLUTIONS } from './javascript-debug';
 import { EVOLVING_SOLUTIONS } from './evolving';
 import { REACT_EVOLVING_SOLUTIONS } from './evolving-react';
+import { FULLSTACK_SOLUTIONS } from './fullstack';
 
 const ALL: Record<string, CodingSolution> = {
   ...EVOLVING_SOLUTIONS, ...REACT_EVOLVING_SOLUTIONS,
+  ...FULLSTACK_SOLUTIONS,
   ...JAVASCRIPT_SOLUTIONS, ...JAVASCRIPT_LOOP_SOLUTIONS, ...JAVASCRIPT_DEBUG_SOLUTIONS,
   ...TYPESCRIPT_SOLUTIONS, ...TYPESCRIPT_LOOP_SOLUTIONS,
   ...REACT_SOLUTIONS, ...REACT_LOOP_SOLUTIONS,

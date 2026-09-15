@@ -25,6 +25,7 @@ import { classifyFailure, failureHint, jsonKind } from '../../shared/coding-fail
 import { afterCodingPass } from '../github-garden';
 import { approachesFor } from './approaches';
 import { evolvingStage, evolvingUnlocked } from '../../shared/evolving';
+import { prepareEvolvingDraft } from '../../shared/coding-fullstack-support';
 import { puzzleFor } from './puzzles';
 import { isAcceptedOrder, isCompleteOrder, PUZZLE_MAX_LINES } from '../../shared/coding-puzzle';
 import {
@@ -164,7 +165,7 @@ export async function handleCodingTask(req: VercelRequest, res: VercelResponse, 
         if (draft === null && stage.previous && !locked) {
           const previous = await withTimeout(supabase.from('coding_drafts').select('code').eq('user_id', userId).eq('task_id', stage.previous).maybeSingle());
           if (previous.error) throw new Error('db_error');
-          draft = typeof previous.data?.code === 'string' ? previous.data.code : null;
+          draft = typeof previous.data?.code === 'string' ? prepareEvolvingDraft(previous.data.code, stage.challenge.category, stage.index) : null;
         }
       }
     } catch {

@@ -67,7 +67,7 @@ export interface EditorProps {
 
 export function Editor({ value, onChange, track, ariaLabel, readOnly, minHeight = 240 }: EditorProps) {
   const extensions = useMemo<Extension[]>(() => [
-    javascript({ jsx: track === 'react', typescript: track === 'typescript' }),
+    javascript({ jsx: track === 'react', typescript: track === 'typescript' || track === 'react' }),
     syntaxHighlighting(highlight),
     theme,
     keymap.of([indentWithTab]),

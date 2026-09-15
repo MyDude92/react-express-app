@@ -3,17 +3,30 @@ import type { CodingTrack, Localized } from './coding-catalog';
 export interface EvolvingChallenge {
   id: string;
   track: CodingTrack;
+  category?: 'fullstack';
   title: Localized;
   stages: readonly string[];
 }
 
 const challenge = (id: string, track: CodingTrack, en: string, cs: string): EvolvingChallenge => ({
-  id, track, title: { en, cs }, stages: [1, 2, 3].map(stage => `${id}-${stage}`),
+  id, track, title: { en, cs }, stages: [1, 2, 3, 4, 5].map(stage => `${id}-${stage}`),
 });
+
+const fullstack = (slug: string, en: string, cs: string): EvolvingChallenge => ({
+  id: `fullstack-${slug}`, category: 'fullstack', track: 'react', title: {en,cs},
+  stages: Array.from({length:8},(_,i)=>`${i===0?'js':i<4?'ts':'react'}-fullstack-${slug}-${i+1}`),
+});
+
+export function evolvingTaskTrack(id: string): CodingTrack {
+  return id.startsWith('js-') ? 'javascript' : id.startsWith('ts-') ? 'typescript' : 'react';
+}
 
 /** A stage is an ordinary server-graded task. Stable task IDs give every stage
  * its own existing account draft, completion record and idempotent XP receipt. */
 export const EVOLVING_CHALLENGES: readonly EvolvingChallenge[] = [
+  fullstack('planner', 'Team task planner', 'Týmový plánovač úkolů'),
+  fullstack('stockroom', 'Stockroom manager', 'Správa skladu'),
+  fullstack('workshops', 'Workshop booking', 'Rezervace workshopů'),
   challenge('js-evolving-calculator', 'javascript', 'Expression engine', 'Výrazový engine'),
   challenge('js-evolving-query', 'javascript', 'Query pipeline', 'Dotazovací pipeline'),
   challenge('js-evolving-events', 'javascript', 'Event bus', 'Sběrnice událostí'),

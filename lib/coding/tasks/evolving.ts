@@ -1,5 +1,6 @@
 import type { CodingTask, CallTest, Localized, TypeTest } from '../../../shared/coding-catalog';
 import { EVOLVING_CHALLENGES } from '../../../shared/evolving';
+import { stageReferences } from './evolving-references';
 
 const text = (en: string, cs: string): Localized => ({ en, cs });
 const test = (call: string, expected: unknown): CallTest => ({ call, expected, edge: true });
@@ -12,6 +13,7 @@ interface Spec {
   tests?: CallTest[][];
   typeTests?: TypeTest[][];
   suites?: string[];
+  references?: { title: Localized; url: string }[][];
 }
 
 const SPECS: Record<string, Spec> = {
@@ -84,12 +86,14 @@ export function buildEvolvingTasks(specs: Record<string, Spec>): CodingTask[] {
     return challenge.stages.map((id, index): CodingTask => ({
       id, track: challenge.track, topic: challenge.track, level: 25, tier: 2,
       title: text(`${challenge.title.en} · ${index + 1}`, `${challenge.title.cs} · ${index + 1}`),
-      prompt: text(spec.prompts.slice(0, index + 1).map(p => p.en).join('\n\n'), spec.prompts.slice(0, index + 1).map(p => p.cs).join('\n\n')),
+      prompt: spec.prompts[index],
+      previousRequirements: spec.prompts.slice(0,index),
+      references: spec.references?.[index] ?? stageReferences(challenge.id,index),
       starter: spec.starter, focus: spec.focus,
       hints: { en: [spec.hints[index].en], cs: [spec.hints[index].cs] },
-      verify: 'tests', estimatedMinutes: [15, 30, 60][index],
+      verify: 'tests', estimatedMinutes: 15 + index * 15,
       ...(spec.tests ? { tests: spec.tests.slice(0, index + 1).flat() } : {}),
-      ...(spec.typeTests ? { typeTests: spec.typeTests.slice(0, index + 1).flat() } : {}),
+      ...(spec.typeTests ? { typeTests: spec.typeTests.slice(0, index + 1).flat().map(test => ({...test, code: `{ ${test.code} }`})) } : {}),
       ...(spec.suites ? { suite: "import React from 'react';\nimport { render, screen, fireEvent, cleanup } from '@testing-library/react';\nimport App from './App';\nafterEach(cleanup);\n" + spec.suites.slice(0, index + 1).join('\n') } : {}),
     }));
   });

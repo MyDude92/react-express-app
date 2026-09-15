@@ -30,7 +30,7 @@ import { evaluateCalls, allPassed } from '../shared/coding-evaluate';
 import { createTypeScript, isCheckerLibFile, typesPassed } from '../shared/coding-ts-check';
 import { runReactSuite } from '../lib/coding/react-runner';
 import { renderCodingIndex } from './build-coding-index';
-import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage, evolvingUnlocked } from '../shared/evolving';
+import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage, evolvingUnlocked, evolvingTaskTrack } from '../shared/evolving';
 
 const SKIP_CS = process.env.CODING_SKIP_CS === '1';
 const ALLOW_GAPS = process.env.CODING_ALLOW_LEVEL_GAPS === '1';
@@ -47,28 +47,30 @@ async function main() {
   const failures: string[] = [];
   const fail = (message: string) => { failures.push(message); };
 
-  assert.equal(EVOLVING_CHALLENGES.length, 10, 'ten evolving projects');
+  assert.ok(EVOLVING_CHALLENGES.length >= 10, 'at least ten evolving projects');
   const stageIds = EVOLVING_CHALLENGES.flatMap(project => [...project.stages]);
-  assert.equal(new Set(stageIds).size, 30, 'thirty stable, unique stage IDs');
+  assert.equal(new Set(stageIds).size, stageIds.length, 'unique stable stage IDs');
   for (const project of EVOLVING_CHALLENGES) {
+    assert.ok(project.stages.length >= (project.category === 'fullstack' ? 6 : 5) && project.stages.length <= 12);
     const passed = new Set<string>();
     for (const [index,id] of project.stages.entries()) {
       const task = CODING_TASKS.find(task => task.id === id);
       assert.ok(task, `${id}: authored task exists`);
-      assert.equal(task.track, project.track);
+      assert.equal(task.track, evolvingTaskTrack(id));
+      assert.ok(task.references?.length && task.references.every(ref=>ref.title.en && ref.title.cs && ref.url.startsWith('https://')), 'each stage has localized references');
       assert.equal(evolvingResume(project, passed), id, 'resume is the first unfinished stage');
       assert.equal(evolvingUnlocked(id, passed), true, 'earlier verified passes unlock the next stage');
       if (index > 0) assert.equal(evolvingUnlocked(id, new Set()), false, 'deep links cannot skip prerequisites');
       assert.ok(!tasksForLevel(task.topic, task.level).some(item => item.id === id), 'optional projects never change Learn quotas');
       if (index > 0) {
         const prior = CODING_TASKS.find(task => task.id === project.stages[index-1])!;
-        assert.ok(task.prompt.en.startsWith(prior.prompt.en) && task.prompt.cs.startsWith(prior.prompt.cs), 'requirements accumulate in both languages');
+        assert.deepEqual(task.previousRequirements?.[index-1], prior.prompt, 'earlier requirements remain available');
         if (task.tests) assert.deepEqual(task.tests.slice(0, prior.tests!.length), prior.tests, 'earlier runtime checks remain');
-        if (task.suite) assert.ok(task.suite.startsWith(prior.suite!), 'earlier UI checks remain');
+        if (task.suite && prior.suite) assert.ok(task.suite.startsWith(prior.suite), 'earlier UI checks remain');
       }
       passed.add(id);
     }
-    assert.equal(evolvingResume(project, passed), project.stages[2], 'finished projects reopen their final stage');
+    assert.equal(evolvingResume(project, passed), project.stages.at(-1), 'finished projects reopen their final stage');
     assert.equal(evolvingUnlocked(project.stages[2], new Set([project.stages[1]])), false, 'all prerequisites are required');
   }
   assert.equal(evolvingStage('js-count-multiples'), null, 'ordinary tasks stay ordinary');

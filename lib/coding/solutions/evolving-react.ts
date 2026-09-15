@@ -1,4 +1,5 @@
 import type { CodingSolution } from '../types';
+import { advanceReact } from './evolving-react-advanced';
 
 const builders: Record<string,(stage:number)=>string> = {
   'react-evolving-board': stage => `import React,{useState,useRef} from 'react';
@@ -41,5 +42,5 @@ export default function App(){const [email,setEmail]=useState(''),[name,setName]
 }`,
 };
 export const REACT_EVOLVING_SOLUTIONS: Record<string,CodingSolution> = Object.fromEntries(
-  Object.entries(builders).flatMap(([id,build])=>[1,2,3].map(stage=>[`${id}-${stage}`,{solution:build(stage)}])),
+  Object.entries(builders).flatMap(([id,build])=>[1,2,3,4,5].map(stage=>[`${id}-${stage}`,{solution:advanceReact(build(Math.min(stage,3)),id,stage)}])),
 );
