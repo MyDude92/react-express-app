@@ -52,11 +52,6 @@
 .cd-project-list { min-width: 0; border-top: 1px solid var(--ss-card-line); }
 .cd-project-list--scroll { max-height: var(--cd-project-list-height, 460px); overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior-y: contain; }
 .cd-project-list--scroll:focus-visible { outline: 3px solid var(--ss-focus); outline-offset: 3px; }
-.cd-project-list--scroll { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--brand-accent) 55%, var(--color-text-secondary)) var(--color-background-muted); }
-.cd-project-list--scroll::-webkit-scrollbar { width: 8px; }
-.cd-project-list--scroll::-webkit-scrollbar-track { background: var(--color-background-muted); border-radius: 999px; }
-.cd-project-list--scroll::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--brand-accent) 55%, var(--color-text-secondary)); border: 2px solid var(--color-background-muted); border-radius: 999px; }
-.cd-project-list--scroll::-webkit-scrollbar-thumb:hover { background: var(--brand-accent); }
 .cd-project { display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(110px, .65fr) auto; align-items: center; gap: 16px; padding: 22px 8px; border-bottom: 1px solid var(--ss-card-line); }
 .cd-project__number { color: var(--color-text-secondary); font: .8rem var(--cd-mono); }
 .cd-project__name { min-width: 0; }

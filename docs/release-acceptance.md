@@ -1,5 +1,20 @@
 # Release acceptance matrix
 
+## Activity-only application scrollbars — 2026-09-15
+
+Native scrollbar tracks and idle thumbs are transparent across the app. A
+single delegated listener set reveals the nearest scrollable container during
+pointer movement, scrolling or scrolling-key input, then hides its thumb after
+1.1 seconds idle. Dragging keeps it visible. The implementation batches pointer
+work with requestAnimationFrame and disposes listeners/timers during hot reload.
+Chromium/WebKit use 4px bars; Firefox uses native thin bars. High-contrast mode
+keeps a visible thumb, and reduced-motion mode removes its color transition.
+Coding and roadmap-specific scrollbar overrides were removed.
+
+Production build, API typecheck, launch contracts, both production dependency
+audits (zero vulnerabilities), and diff checks passed. Local responsive
+verification remains blocked by missing Chrome/Chromium.
+
 ## Waterline variation and themed scrolling — 2026-09-15
 
 The evolving list uses a thin rounded scrollbar with shared surface, text and

@@ -57,7 +57,7 @@ function purgeAstryxCss(): Plugin {
             // Attribute/state selectors composed at runtime.
             // Preserve compound hover/focus selectors: PurgeCSS otherwise drops
             // :is(...):not(:disabled) even when its classes are safelisted.
-            greedy: [/ss-fin-button/, /data-theme/, /data-color-mode/, /data-selected/, /data-active/, /data-tone/, /data-locked/, /data-complete/],
+            greedy: [/ss-fin-button/, /data-scroll-active/, /data-theme/, /data-color-mode/, /data-selected/, /data-active/, /data-tone/, /data-locked/, /data-complete/],
           },
         });
         if (result.css.includes('.ss-fin-hover__swimmer') && !/ss-fin-button[^{}]*:hover[^{}]*\{/.test(result.css)) {

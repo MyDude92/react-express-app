@@ -18,6 +18,10 @@ import { queryClient } from './lib/queryClient';
 import { initSentry } from './lib/sentry';
 import { initAnalytics } from './lib/analytics';
 import { MotionProvider } from './lib/motion';
+import { installScrollbarActivity } from './lib/scrollbarActivity';
+
+const disposeScrollbarActivity = installScrollbarActivity();
+if (import.meta.hot) import.meta.hot.dispose(disposeScrollbarActivity);
 
 // Start error/performance reporting before anything renders (no-op without a DSN).
 initSentry();

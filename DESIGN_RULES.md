@@ -62,6 +62,12 @@ bottom edge: emergence starts below it, and dives travel diagonally downward.
 
 ## 4. The wave-variation rule
 
+App scrollbars keep a stable gutter and a transparent track. Shared delegated
+activity handling reveals only the active scroll container's themed thumb,
+then hides it after 1.1 seconds idle. WebKit thumbs are 4px; Firefox uses its
+native thin width. Scrolling and keyboard navigation also reveal the thumb;
+forced-colors mode keeps it visible. Do not add per-component scrollbar rules.
+
 `generateWaterline()` assigns progress waves a stable randomized wavelength,
 amplitude, direction, speed and phase. Coding track decoration opts into zero,
 one or two fins with varied sizes and separated positions. These decorative
