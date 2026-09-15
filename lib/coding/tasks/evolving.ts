@@ -85,7 +85,7 @@ export function buildEvolvingTasks(specs: Record<string, Spec>): CodingTask[] {
   return EVOLVING_CHALLENGES.flatMap(challenge => {
     const spec = specs[challenge.id];
     if (!spec) return [];
-    return challenge.stages.map((id, index): CodingTask => ({
+    return challenge.stages.filter(id => !id.endsWith('-start')).map((id, index): CodingTask => ({
       id, track: challenge.track, topic: challenge.track, level: 25, tier: 2,
       title: text(`${challenge.title.en} · ${index + 1}`, `${challenge.title.cs} · ${index + 1}`),
       prompt: spec.prompts[index],

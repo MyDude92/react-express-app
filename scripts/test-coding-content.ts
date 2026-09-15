@@ -30,7 +30,7 @@ import { evaluateCalls, allPassed } from '../shared/coding-evaluate';
 import { createTypeScript, isCheckerLibFile, typesPassed } from '../shared/coding-ts-check';
 import { runReactSuite } from '../lib/coding/react-runner';
 import { renderCodingIndex } from './build-coding-index';
-import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage, evolvingUnlocked, evolvingTaskTrack } from '../shared/evolving';
+import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage, evolvingUnlocked, evolvingTaskTrack, evolvingPassed } from '../shared/evolving';
 
 const SKIP_CS = process.env.CODING_SKIP_CS === '1';
 const ALLOW_GAPS = process.env.CODING_ALLOW_LEVEL_GAPS === '1';
@@ -79,7 +79,10 @@ async function main() {
       passed.add(id);
     }
     assert.equal(evolvingResume(project, passed), project.stages.at(-1), 'finished projects reopen their final stage');
-    assert.equal(evolvingUnlocked(project.stages[2], new Set([project.stages[1]])), false, 'all prerequisites are required');
+    assert.equal(evolvingUnlocked(project.stages.at(-1)!, new Set([project.stages.at(-2)!])), false, 'all prerequisites are required');
+    const legacy = new Set(project.stages.filter(id => !id.endsWith('-start')));
+    assert.ok(project.stages.every(id => evolvingPassed(id, legacy)), 'legacy milestone completion covers new prerequisites');
+    assert.equal(evolvingResume(project, legacy), project.stages.at(-1), 'existing finishers remain finished');
   }
   assert.equal(evolvingStage('js-count-multiples'), null, 'ordinary tasks stay ordinary');
 
@@ -218,6 +221,9 @@ async function main() {
       starterCode = checker.toJavaScript(task.starter);
     }
     const run = await withTimeout(evaluateCalls({ code, calls: task.tests.map((t) => t.call), expectations: task.tests.map((t) => t.expected) }), 8_000, where);
+    const serverTests = [...task.tests, ...solution.hiddenTests ?? []];
+    const sandbox = await runInSandbox({code, calls:serverTests.map(test=>test.call), expectations:serverTests.map(test=>test.expected)});
+    if (!allPassed(sandbox)) fail(`${where}: reference fails the production QuickJS grader: ${JSON.stringify(sandbox).slice(0,500)}`);
     if (!allPassed(run)) {
       const wrong = run.results.map((r, i) => (r.pass ? null : `${task.tests![i].call} → ${r.error ?? r.actual}`)).filter(Boolean);
       fail(`${where}: reference solution fails visible tests: ${run.codeError ?? wrong.join('; ')}`);

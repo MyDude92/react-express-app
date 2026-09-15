@@ -1,6 +1,7 @@
 /** Server-only access to reference solutions and hidden tests. The launch
  * contracts assert that nothing under `client/` imports this directory. */
 
+import { EVOLVING_CHALLENGES } from '../../../shared/evolving';
 import type { CodingSolution } from '../types';
 import { JAVASCRIPT_SOLUTIONS } from './javascript';
 import { TYPESCRIPT_SOLUTIONS } from './typescript';
@@ -20,6 +21,11 @@ const ALL: Record<string, CodingSolution> = {
   ...TYPESCRIPT_SOLUTIONS, ...TYPESCRIPT_LOOP_SOLUTIONS,
   ...REACT_SOLUTIONS, ...REACT_LOOP_SOLUTIONS,
 };
+
+for (const id of EVOLVING_CHALLENGES.flatMap(project => project.stages).filter(id => id.endsWith('-start'))) {
+  // A checkpoint checks only its smaller public contract, never future hidden requirements.
+  ALL[id] = {solution: ALL[id.slice(0,-6)].solution};
+}
 
 export const solutionFor = (id: string): CodingSolution | undefined => ALL[id];
 export const solutionIds = (): string[] => Object.keys(ALL);

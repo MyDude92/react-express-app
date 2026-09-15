@@ -44,6 +44,20 @@ function mount(id: string) {
 }
 beforeEach(() => { mocks.drafts = {}; mocks.save.mockClear(); });
 
+it.each(EVOLVING_CHALLENGES.map(project => [project.id, project] as const))('finishes every stage of %s without losing the draft', (_id, project) => {
+  mount(project.stages[0]);
+  for (const [index, id] of project.stages.entries()) {
+    const code = `// completed ${id}`;
+    fireEvent.change(screen.getByLabelText('Stage code'), {target:{value:code}});
+    fireEvent.click(screen.getByText('Pass stage'));
+    if (index === project.stages.length - 1) break;
+    fireEvent.click(screen.getByText('Next stage'));
+    const crossesToReact = project.category === 'fullstack' && !id.startsWith('react-') && project.stages[index+1].startsWith('react-');
+    expect(screen.getByLabelText('Stage code')).toHaveValue(code + (crossesToReact ? FULLSTACK_REACT_SCAFFOLD : ''));
+  }
+  expect(screen.queryByText('Next stage')).toBeNull();
+});
+
 it.each(['js-evolving-calculator', 'ts-evolving-result', 'react-evolving-board'])('carries the submitted code into the next %s stage', async prefix => {
   const project = EVOLVING_CHALLENGES.find(item => item.id === prefix)!;
   const [first, second] = project.stages;
@@ -60,7 +74,7 @@ it.each(['js-evolving-calculator', 'ts-evolving-result', 'react-evolving-board']
 });
 
 it.each(['local', 'server'])('preserves an existing next-stage %s draft', source => {
-  const first = 'js-evolving-calculator-1', second = 'js-evolving-calculator-2';
+  const first = 'js-evolving-calculator-1', second = 'js-evolving-calculator-2-start';
   if (source === 'local') localStorage.setItem(key(second), '// further edits');
   else mocks.drafts[second] = '// further edits';
   mount(first);
@@ -72,7 +86,7 @@ it.each(['local', 'server'])('preserves an existing next-stage %s draft', source
 
 it('keeps the API implementation and appends the React scaffold at the FullStack transition', () => {
   const project = EVOLVING_CHALLENGES.find(item => item.category === 'fullstack')!;
-  mount(project.stages[3]);
+  mount(project.stages[project.stages.findIndex(id => id.startsWith('react-'))-1]);
   fireEvent.change(screen.getByLabelText('Stage code'), { target: { value: '// my API implementation' } });
   fireEvent.click(screen.getByText('Pass stage'));
   fireEvent.click(screen.getByText('Next stage'));
