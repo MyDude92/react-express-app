@@ -96,7 +96,13 @@ after a later failure, draft upsert and account separation. Assertions passed;
 **all synthetic writes were rolled back**, with no XP awarded. This is not a
 backup-restore drill or a production concurrency/load test.
 
-## Remaining gates
+## Remaining gates at the original audit
+
+Update: PR #192 subsequently merged to main and deployed. The
+[September 16 follow-up](./launch-hardening-2026-09-16.md) records the QuickJS
+integrity fix, completed multi-account/deletion/browser checks, bounded load
+measurements and accepted recovery targets. The following preserves the
+original audit's status; use the follow-up and release matrix for current gates.
 
 - **Grading integrity:** isolation protects the application host, but the guest
   still runs learner code and the suite in one Node process. Hostile source can

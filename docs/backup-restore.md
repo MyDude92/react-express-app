@@ -6,6 +6,29 @@ Supabase plan and recovery-point objective.
 
 ## Backup
 
+### Accepted objectives (2026-09-15)
+
+The owner selected **RPO 24 hours** (maximum lost data) and **RTO 1 hour**
+(incident declaration through restored, verified service). Provisioning alone
+does not satisfy RTO. Measure configuration, validation and cutover too.
+
+The production dashboard showed a completed managed backup from
+**2026-09-15 03:27:12 UTC**, approximately 19 hours old at inspection, with
+completed daily backups on preceding days. This observed recovery point is
+within the target; it does not prove future backup freshness or restorability.
+
+An isolated copy named `devshark-recovery-20260915` was prepared from that
+backup. The dashboard displayed $0 additional monthly cost. Creation remains
+pending the owner's database-password handoff; **no restore has run and RTO is
+unmeasured**. Production has not been restored or overwritten.
+
+Supabase's [clone documentation](https://supabase.com/docs/guides/platform/clone-project)
+distinguishes database/auth records from configuration and storage objects.
+Inventory Auth settings, redirect URLs, Realtime, Edge Functions and object
+storage separately; restoring database rows does not restore those settings or
+objects. Disable copied scheduled/external jobs before exercising a recovery
+copy to avoid duplicate side effects.
+
 1. Record the source project ref, Postgres version, migration level, UTC start
    time, and person performing the backup.
 2. Use Supabase managed backups/PITR when available. In addition, create an

@@ -2,8 +2,9 @@
 
 ## Challenge launch audit — 2026-09-15
 
-Status: **not yet approved for production launch**. The fixes are pushed in
-[PR #192](https://github.com/lukaskourilcz/react-express-app/pull/192).
+Status: **not yet approved for production launch**. The fixes in
+[PR #192](https://github.com/lukaskourilcz/react-express-app/pull/192) were merged
+to main as `541941e`, with the devShark production deployment READY.
 All 13 evolving/full-stack projects now contain 136 smaller cumulative stages;
 existing completion and drafts are retained. React restart/submit/results,
 QuickJS expectations, account-bound sessions and accessible workbench controls
@@ -23,11 +24,14 @@ were repaired. Server React execution now uses disposable isolated VMs.
 | Live database idempotency, retained pass, isolated drafts | PASS — synthetic transaction rolled back |
 | Real isolated VM forms, storage, network/credential isolation, loop termination | PASS — 6 integration checks |
 | Deployed API submissions (first stage of every project) | PASS — 13/13 on `a0e332a`, including the OIDC-backed React VM runner |
-| Recovery, load/concurrency, multi-account and physical-device acceptance | NOT RUN — #190 |
-| Hostile submission verdict integrity | OPEN — #191; VM isolation alone does not resolve this |
+| Two-account API/browser flow, permissions, draft separation and deletion | PASS — disposable users; multiplayer/Classroom completed, reconnect/reload recovered |
+| Bounded React concurrency | PASS — 10/10 at maximum concurrency 3; p50 5.767 s, p95/max 14.933 s; launch-capacity acceptance still OPEN |
+| Recovery | OPEN — RPO 24h/RTO 1h accepted; latest observed backup ~19h old; restore credential handoff pending |
+| Alert delivery and physical-device acceptance | NOT RUN — #190 |
+| Hostile submission verdict integrity | QuickJS regression PASS; React OPEN — #191; VM isolation alone does not resolve this |
 
 The mobile workbench still requires a larger screen for editing, as before.
-Production was not promoted. See the [full audit](./launch-audit-2026-09-15.md)
+See the [hardening follow-up](./launch-hardening-2026-09-16.md) and [full audit](./launch-audit-2026-09-15.md)
 for exact scope, live-account changes, preview evidence and outstanding gates,
 and [operations](./react-grading-operations.md) for snapshot maintenance.
 

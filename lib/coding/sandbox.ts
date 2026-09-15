@@ -6,10 +6,10 @@
  * A memory limit, a stack limit and a CPU deadline bound every run. This is
  * the verdict of record for JavaScript and TypeScript tasks. */
 
-import { newQuickJSWASMModuleFromVariant, shouldInterruptAfterDeadline, type QuickJSWASMModule } from 'quickjs-emscripten';
+import { newQuickJSWASMModuleFromVariant, shouldInterruptAfterDeadline, type QuickJSWASMModule, type QuickJSHandle } from 'quickjs-emscripten';
 import variant from '@jitl/quickjs-singlefile-cjs-release-sync';
 import type { EvaluateResult } from '../../shared/coding-evaluate';
-import { TIMEOUT_MESSAGE } from '../../shared/coding-evaluate';
+import { TIMEOUT_MESSAGE, deepEqual, displayValue } from '../../shared/coding-evaluate';
 
 let modulePromise: Promise<QuickJSWASMModule> | null = null;
 const getModule = () => (modulePromise ??= newQuickJSWASMModuleFromVariant(variant));
@@ -32,108 +32,116 @@ const MAX_LOGS = 100;
  * than inlined so the message reads the same wherever the overflow surfaces. */
 const STACK_MESSAGE = 'The call stack ran out of room: the recursion went too deep, or a base case is never reached.';
 
-// Runs inside the VM before the learner's code: a virtual clock, timers,
-// console capture and the evaluator. Declared with `var` so a learner's own
-// top-level `const` cannot collide with a `let` of the same name.
-const PRELUDE = `
-var __vtime = 0;
-var __timers = [];
-var __nextTimer = 1;
-var __logs = [];
-var __done = false;
-var __out = null;
-var __fmt = function (value) {
-  if (typeof value === 'string') return value;
-  try { var t = JSON.stringify(value); return t === undefined ? String(value) : t; } catch (e) { return String(value); }
-};
-var __display = function (value) {
-  if (value === undefined) return 'undefined';
-  try { var t = JSON.stringify(value); return t === undefined ? String(value) : t; } catch (e) { return String(value); }
-};
-var __deepEqual = function (a, b) {
-  if (Object.is(a, b)) return true;
-  if (Array.isArray(a) || Array.isArray(b)) {
-    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every(function (v, i) { return __deepEqual(v, b[i]); });
+// The learner is compiled in a separate strict function scope. This controller
+// stays in an inaccessible closure held by the host, never in VM globals.
+// Expected values and pass/fail comparison stay entirely outside QuickJS.
+function program(code: string, calls: string[]): string {
+  return `(() => {
+'use strict';
+const apply = Reflect.apply, keys = Object.keys, isArray = Array.isArray;
+const setPrototype = Object.setPrototypeOf, stringify = JSON.stringify;
+const NativeFunction = Function, nativeThen = Promise.prototype.then;
+const string = String, number = Number, is = Object.is;
+const makeArray = () => setPrototype([], null);
+const packet = (...values) => setPrototype(values, null);
+let now = 0, nextId = 1, timers = makeArray(), logs = makeArray();
+let done = false, output = null;
+const encode = (value, depth = 0, seen = makeArray()) => {
+  if (depth > 40) throw new Error('Result nesting limit exceeded');
+  if (value === undefined) return packet('undefined');
+  if (value === null) return packet('null');
+  if (typeof value === 'number') return packet('number', is(value, -0) ? '-0' : string(value));
+  if (typeof value === 'string' || typeof value === 'boolean') return packet(typeof value, value);
+  if (typeof value !== 'object') throw new Error('Result is not cloneable');
+  for (let i = 0; i < seen.length; i++) if (seen[i] === value) throw new Error('Circular result');
+  seen[seen.length] = value;
+  const entries = makeArray();
+  const names = isArray(value) ? null : keys(value);
+  const length = names ? names.length : value.length;
+  if (length > 10000) throw new Error('Result size limit exceeded');
+  for (let i = 0; i < length; i++) {
+    entries[entries.length] = names ? packet(names[i], encode(value[names[i]], depth + 1, seen)) : encode(value[i], depth + 1, seen);
   }
-  if (a && b && typeof a === 'object' && typeof b === 'object') {
-    var ka = Object.keys(a), kb = Object.keys(b);
-    return ka.length === kb.length && ka.every(function (k) { return Object.prototype.hasOwnProperty.call(b, k) && __deepEqual(a[k], b[k]); });
-  }
-  return false;
+  seen.length--;
+  return packet(names ? 'object' : 'array', entries);
 };
-var __schedule = function (fn, ms, interval, args) {
-  var id = __nextTimer++;
-  var delay = Math.max(0, Number(ms) || 0);
-  __timers.push({ id: id, at: __vtime + delay, fn: fn, args: args, interval: interval ? Math.max(1, delay) : null });
+const message = error => { try { return string(error && error.message || error); } catch { return 'Evaluation failed'; } };
+const record = args => {
+  if (logs.length >= ${MAX_LOGS}) return;
+  let line = '';
+  for (let i = 0; i < args.length; i++) {
+    if (i) line += ' ';
+    try { line += typeof args[i] === 'string' ? args[i] : stringify(args[i]); } catch { line += '[unprintable]'; }
+  }
+  logs[logs.length] = line;
+};
+const schedule = (fn, ms, interval, args) => {
+  const id = nextId++, delay = number(ms) || 0;
+  timers[timers.length] = { id, at: now + (delay > 0 ? delay : 0), fn, args, interval: interval ? (delay > 1 ? delay : 1) : null };
   return id;
 };
-var __tick = function () {
-  if (__timers.length === 0) return false;
-  __timers.sort(function (a, b) { return a.at - b.at || a.id - b.id; });
-  var t = __timers.shift();
-  __vtime = Math.max(__vtime, t.at);
-  if (t.interval !== null) __timers.push({ id: t.id, at: __vtime + t.interval, fn: t.fn, args: t.args, interval: t.interval });
-  try { if (typeof t.fn === 'function') t.fn.apply(null, t.args); } catch (e) { __logs.push('timer error: ' + String(e && e.message || e)); }
-  return true;
+globalThis.setTimeout = (fn, ms, ...args) => schedule(fn, ms, false, args);
+globalThis.setInterval = (fn, ms, ...args) => schedule(fn, ms, true, args);
+globalThis.clearTimeout = globalThis.clearInterval = id => {
+  const kept = makeArray();
+  for (let i = 0; i < timers.length; i++) if (timers[i].id !== id) kept[kept.length] = timers[i];
+  timers = kept;
 };
-var __record = function (level, args) {
-  if (__logs.length < ${MAX_LOGS}) __logs.push(args.map(__fmt).join(' '));
+globalThis.queueMicrotask = fn => { void (async () => { await 0; fn(); })(); };
+const parse = JSON.parse;
+globalThis.structuredClone = value => parse(stringify(value));
+Date.now = () => 1700000000000 + now;
+globalThis.performance = { now: () => now };
+globalThis.console = { log: (...args) => record(args), info: (...args) => record(args), warn: (...args) => record(args), error: (...args) => record(args), debug: (...args) => record(args) };
+const evaluate = NativeFunction(${JSON.stringify('"use strict";\n' + code + '\n;return [' + calls.map(call => '() => (' + call.trim().replace(/;+$/, '') + '\n)').join(',') + '];')})();
+const outcomes = makeArray();
+let remaining = ${calls.length};
+if (!remaining) { output = stringify(outcomes); done = true; }
+for (let i = 0; i < ${calls.length}; i++) {
+  const invoke = async () => {
+    try { outcomes[i] = packet('value', encode(await evaluate[i]())); }
+    catch (error) { outcomes[i] = packet('error', message(error)); }
+  };
+  apply(nativeThen, invoke(), [() => {
+    remaining--;
+    if (!remaining) { output = stringify(outcomes); done = true; }
+  }]);
+}
+return {
+  done: () => done,
+  output: () => output,
+  logs: () => stringify(logs),
+  tick: () => {
+    if (!timers.length) return false;
+    let first = 0;
+    for (let i = 1; i < timers.length; i++) if (timers[i].at < timers[first].at || (timers[i].at === timers[first].at && timers[i].id < timers[first].id)) first = i;
+    const timer = timers[first], rest = makeArray();
+    for (let i = 0; i < timers.length; i++) if (i !== first) rest[rest.length] = timers[i];
+    timers = rest;
+    now = timer.at > now ? timer.at : now;
+    if (timer.interval !== null) { timer.at = now + timer.interval; timers[timers.length] = timer; }
+    try { if (typeof timer.fn === 'function') apply(timer.fn, null, timer.args); }
+    catch (error) { record(['timer error: ' + message(error)]); }
+    return true;
+  },
 };
-globalThis.setTimeout = function (fn, ms) { return __schedule(fn, ms, false, Array.prototype.slice.call(arguments, 2)); };
-globalThis.setInterval = function (fn, ms) { return __schedule(fn, ms, true, Array.prototype.slice.call(arguments, 2)); };
-globalThis.clearTimeout = function (id) { __timers = __timers.filter(function (t) { return t.id !== id; }); };
-globalThis.clearInterval = globalThis.clearTimeout;
-globalThis.queueMicrotask = function (fn) { Promise.resolve().then(fn); };
-globalThis.structuredClone = function (v) { return JSON.parse(JSON.stringify(v)); };
-var __epoch = 1_700_000_000_000;
-Date.now = function () { return __epoch + __vtime; };
-globalThis.performance = { now: function () { return __vtime; } };
-globalThis.console = {
-  log: function () { __record('log', Array.prototype.slice.call(arguments)); },
-  info: function () { __record('info', Array.prototype.slice.call(arguments)); },
-  warn: function () { __record('warn', Array.prototype.slice.call(arguments)); },
-  error: function () { __record('error', Array.prototype.slice.call(arguments)); },
-  debug: function () { __record('debug', Array.prototype.slice.call(arguments)); },
-};
-`;
-
-/** JSON alone changes undefined/NaN/Infinity to null. Emit a lossless value
- * expression for the authored expectations; learner input is never interpolated here. */
-function expectationSource(value: unknown): string {
-  if (value === undefined) return 'undefined';
-  if (typeof value === 'number') {
-    if (Number.isNaN(value)) return 'NaN';
-    if (value === Infinity) return 'Infinity';
-    if (value === -Infinity) return '-Infinity';
-    if (Object.is(value, -0)) return '-0';
-  }
-  if (Array.isArray(value)) return `[${value.map(expectationSource).join(',')}]`;
-  if (value && typeof value === 'object') return `Object.fromEntries([${Object.entries(value).map(([key, item]) => `[${JSON.stringify(key)},${expectationSource(item)}]`).join(',')}])`;
-  return JSON.stringify(value);
+})()`;
 }
 
-function program(code: string, calls: string[], expectations: unknown[] | null): string {
-  const grading = Array.isArray(expectations);
-  return `${PRELUDE}
-var __calls = ${JSON.stringify(calls)};
-var __expect = ${grading ? expectationSource(expectations) : 'null'};
-(function () {
-${code}
-;Promise.all(__calls.map(async function (source) {
-  try { return { ok: true, value: await eval(source) }; }
-  catch (error) { return { ok: false, error: String((error && error.message) || error) }; }
-})).then(function (outcomes) {
-  __out = JSON.stringify(outcomes.map(function (outcome, index) {
-    if (!outcome.ok) return { pass: false, actual: null, error: outcome.error };
-    return { pass: __expect ? __deepEqual(outcome.value, __expect[index]) : null, actual: __display(outcome.value), error: null };
+function decode(value: unknown, depth = 0): unknown {
+  if (depth > 40 || !Array.isArray(value)) throw new Error('Malformed result');
+  const [type, data] = value;
+  if (type === 'undefined') return undefined;
+  if (type === 'null') return null;
+  if (type === 'number' && typeof data === 'string') return Number(data);
+  if (type === 'string' && typeof data === 'string') return data;
+  if (type === 'boolean' && typeof data === 'boolean') return data;
+  if (type === 'array' && Array.isArray(data)) return data.map(item => decode(item, depth + 1));
+  if (type === 'object' && Array.isArray(data)) return Object.fromEntries(data.map(entry => {
+    if (!Array.isArray(entry) || typeof entry[0] !== 'string') throw new Error('Malformed property');
+    return [entry[0], decode(entry[1], depth + 1)];
   }));
-  __done = true;
-}, function (error) {
-  __out = JSON.stringify({ codeError: String((error && error.message) || error) });
-  __done = true;
-});
-})();
-`;
+  throw new Error('Malformed result value');
 }
 
 /** Runs one program. Never throws for learner mistakes: a syntax error, a
@@ -147,22 +155,23 @@ export async function runInSandbox(input: SandboxInput): Promise<EvaluateResult>
   runtime.setMaxStackSize(STACK_BYTES);
   runtime.setInterruptHandler(shouldInterruptAfterDeadline(deadline));
   const vm = runtime.newContext();
-  const readLogs = (): string[] => {
-    const handle = vm.getProp(vm.global, '__logs');
+  let driver: QuickJSHandle | null = null;
+  const readDriver = (name: string): unknown => {
+    if (!driver) return undefined;
+    const fn = vm.getProp(driver, name);
     try {
-      const value = vm.dump(handle);
-      return Array.isArray(value) ? value.map(String) : [];
-    } finally {
-      handle.dispose();
-    }
+      const result = vm.callFunction(fn, vm.undefined);
+      if (result.error) {
+        const error = vm.dump(result.error);
+        result.error.dispose();
+        throw new Error(error?.message ?? 'Evaluator failed');
+      }
+      try { return vm.dump(result.value); } finally { result.value.dispose(); }
+    } finally { fn.dispose(); }
   };
-  const readGlobal = (name: string): unknown => {
-    const handle = vm.getProp(vm.global, name);
-    try {
-      return vm.dump(handle);
-    } finally {
-      handle.dispose();
-    }
+  const readLogs = (): string[] => {
+    const raw = readDriver('logs');
+    return typeof raw === 'string' ? JSON.parse(raw) : [];
   };
   const failure = (message: string, timedOut = false): EvaluateResult => {
     let logs: string[] = [];
@@ -173,7 +182,7 @@ export async function runInSandbox(input: SandboxInput): Promise<EvaluateResult>
   const isStackOverflow = (message: string) => /stack overflow|maximum call stack|gc_obj_list/i.test(message);
 
   try {
-    const evaluated = vm.evalCode(program(input.code, input.calls, input.expectations), 'task.js');
+    const evaluated = vm.evalCode(program(input.code, input.calls), 'task.js');
     if (evaluated.error) {
       const error = vm.dump(evaluated.error) as { message?: string; name?: string } | string;
       evaluated.error.dispose();
@@ -182,7 +191,7 @@ export async function runInSandbox(input: SandboxInput): Promise<EvaluateResult>
       if (isStackOverflow(message)) return failure(STACK_MESSAGE);
       return failure(message.replace(/^SyntaxError: /, 'SyntaxError: '));
     }
-    evaluated.value.dispose();
+    driver = evaluated.value;
 
     for (let tick = 0; tick < MAX_TICKS; tick++) {
       const jobs = runtime.executePendingJobs();
@@ -194,19 +203,8 @@ export async function runInSandbox(input: SandboxInput): Promise<EvaluateResult>
         // An unhandled rejection inside a job: keep pumping, the harness catches per call.
       }
       if (Date.now() > deadline) return failure(TIMEOUT_MESSAGE, true);
-      if (readGlobal('__done') === true) break;
-      const tickFn = vm.getProp(vm.global, '__tick');
-      const fired = vm.callFunction(tickFn, vm.undefined);
-      tickFn.dispose();
-      if (fired.error) {
-        const error = vm.dump(fired.error) as { message?: string } | string;
-        fired.error.dispose();
-        const message = typeof error === 'string' ? error : error?.message ?? 'failed';
-        if (isInterrupt(message)) return failure(TIMEOUT_MESSAGE, true);
-        continue;
-      }
-      const didFire = vm.dump(fired.value) === true;
-      fired.value.dispose();
+      if (readDriver('done') === true) break;
+      const didFire = readDriver('tick') === true;
       if (!didFire && !runtime.hasPendingJob()) {
         // Nothing left to run and the calls have not settled: a promise that
         // never resolves. Report it instead of waiting for the deadline.
@@ -214,13 +212,20 @@ export async function runInSandbox(input: SandboxInput): Promise<EvaluateResult>
       }
     }
 
-    if (readGlobal('__done') !== true) return failure(TIMEOUT_MESSAGE, true);
-    const raw = readGlobal('__out');
+    if (readDriver('done') !== true) return failure(TIMEOUT_MESSAGE, true);
+    const raw = readDriver('output');
     const logs = readLogs();
-    if (typeof raw !== 'string') return { results: [], logs, codeError: 'The run produced no result.' };
-    const parsed = JSON.parse(raw) as EvaluateResult['results'] | { codeError: string };
-    if (!Array.isArray(parsed)) return { results: [], logs, codeError: parsed.codeError ?? 'failed' };
-    return { results: parsed, logs, codeError: null, timedOut: false };
+    if (typeof raw !== 'string' || raw.length > 1_000_000) return failure('The run produced an invalid result.');
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed) || parsed.length !== input.calls.length) return failure('Incomplete evaluation.');
+    const results = parsed.map((outcome, index) => {
+      if (!Array.isArray(outcome)) throw new Error('Malformed result');
+      if (outcome[0] === 'error' && typeof outcome[1] === 'string') return { pass: false, actual: null, error: outcome[1] };
+      if (outcome[0] !== 'value') throw new Error('Malformed result');
+      const actual = decode(outcome[1]);
+      return { pass: input.expectations ? deepEqual(actual, input.expectations[index]) : null, actual: displayValue(actual), error: null };
+    });
+    return { results, logs, codeError: null, timedOut: false };
   } catch (error) {
     const message = String((error as Error)?.message ?? error);
     if (isInterrupt(message)) return failure(TIMEOUT_MESSAGE, true);
@@ -234,6 +239,7 @@ export async function runInSandbox(input: SandboxInput): Promise<EvaluateResult>
     // to report rather than crash on — as a 500. Swallow it, and drop the
     // cached module so the next run starts from a clean instance.
     let disposalFailed = false;
+    try { driver?.dispose(); } catch { disposalFailed = true; }
     try { vm.dispose(); } catch { disposalFailed = true; }
     try { runtime.dispose(); } catch { disposalFailed = true; }
     if (disposalFailed) modulePromise = null;
