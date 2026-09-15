@@ -1,8 +1,12 @@
 {
-  "buildCommand": "npm ci --prefix client && npm run build --prefix client",
+  "buildCommand": "npm run build:react-runner && npm ci --prefix client && npm run build --prefix client",
   "outputDirectory": "client/dist",
   "framework": null,
   "functions": {
+    "api/quiz/roadmap.ts": {
+      "maxDuration": 45,
+      "includeFiles": "{lib/coding/generated/*.cjs,node_modules/typescript/lib/lib.*.d.ts}"
+    },
     "api/**/*.ts": {
       "maxDuration": 10,
       "includeFiles": "node_modules/{typescript/lib/lib.*.d.ts,react/cjs/*.development.js,react-dom/cjs/*.development.js}"

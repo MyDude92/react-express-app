@@ -46,7 +46,7 @@ function build(app:FullStackApp,stage:number):string {
 
 export const FULLSTACK_SOLUTIONS:Record<string,CodingSolution> = Object.fromEntries(FULLSTACK_APPS.flatMap(app=>{
  const project=EVOLVING_CHALLENGES.find(p=>p.id===`fullstack-${app.slug}`)!;
- return project.stages.map((id,i)=>[id,{solution:build(app,i+1),...(i<4?{hiddenTests:[
+ return project.stages.filter(id => !id.endsWith('-start')).map((id,i)=>[id,{solution:build(app,i+1),...(i<4?{hiddenTests:[
   {call:`normalizeInput({name:'x'.repeat(81),${app.amount}:1})`,expected:null},
   {call:`normalizeInput({name:'A',${app.amount}:1001})`,expected:null},
   ...(i>=2?[{call:`(()=>{const seed=${JSON.stringify(fullstackSeed(app))};const api=createApi(seed);seed[0].name='changed';const first=api({method:'GET',path:'${app.endpoint}'});first.body[0].name='mutated';return api({method:'GET',path:'${app.endpoint}'}).body[0].name})()`,expected:app.first}]:[]),

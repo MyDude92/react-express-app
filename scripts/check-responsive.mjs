@@ -303,8 +303,13 @@ const PROBE = `(() => {
 const CLEARANCE = `(async () => {
   const scroller = document.querySelector('main') || document.scrollingElement;
   if (scroller) {
-    scroller.scrollTop = scroller.scrollHeight;
-    await new Promise((r) => setTimeout(r, 250));
+    // Late query/error UI can grow the page after the first scroll. Measure
+    // the real page end, rather than mistaking that growth for covered links.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      scroller.scrollTop = scroller.scrollHeight;
+      await new Promise((r) => setTimeout(r, 250));
+      if (scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop < 2) break;
+    }
   }
   // The decorative overlays: fixed or absolute, ignored by the pointer, and
   // sitting against the bottom of the viewport.

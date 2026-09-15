@@ -9,12 +9,13 @@ export interface EvolvingChallenge {
 }
 
 const challenge = (id: string, track: CodingTrack, en: string, cs: string): EvolvingChallenge => ({
-  id, track, title: { en, cs }, stages: [1, 2, 3, 4, 5].map(stage => `${id}-${stage}`),
+  id, track, title: { en, cs }, stages: [1, 2, 3, 4, 5].flatMap(stage => [`${id}-${stage}-start`, `${id}-${stage}`]),
 });
 
 const fullstack = (slug: string, en: string, cs: string): EvolvingChallenge => ({
   id: `fullstack-${slug}`, category: 'fullstack', track: 'react', title: {en,cs},
-  stages: Array.from({length:8},(_,i)=>`${i===0?'js':i<4?'ts':'react'}-fullstack-${slug}-${i+1}`),
+  stages: Array.from({length:8},(_,i)=>`${i===0?'js':i<4?'ts':'react'}-fullstack-${slug}-${i+1}`)
+    .flatMap((id, i) => [1,4,5,7].includes(i) ? [`${id}-start`, id] : [id]),
 });
 
 export function evolvingTaskTrack(id: string): CodingTrack {
@@ -47,10 +48,16 @@ export function evolvingStage(id: string) {
 }
 
 export function evolvingResume(challenge: EvolvingChallenge, passed: ReadonlySet<string>): string {
-  return challenge.stages.find(id => !passed.has(id)) ?? challenge.stages[challenge.stages.length - 1];
+  return challenge.stages.find(id => !evolvingPassed(id, passed)) ?? challenge.stages[challenge.stages.length - 1];
+}
+
+/** Existing milestone passes cover their newly separated prerequisite.
+ * This preserves earned progress without inventing XP receipts or database rows. */
+export function evolvingPassed(id: string, passed: ReadonlySet<string>): boolean {
+  return passed.has(id) || (id.endsWith('-start') && passed.has(id.slice(0, -6)));
 }
 
 export function evolvingUnlocked(id: string, passed: ReadonlySet<string>): boolean {
   const stage = evolvingStage(id);
-  return !stage || stage.challenge.stages.slice(0, stage.index).every(id => passed.has(id));
+  return !stage || stage.challenge.stages.slice(0, stage.index).every(id => evolvingPassed(id, passed));
 }

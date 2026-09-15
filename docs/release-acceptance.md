@@ -1,5 +1,36 @@
 # Release acceptance matrix
 
+## Challenge launch audit — 2026-09-15
+
+Status: **not yet approved for production launch**. The fixes are pushed in
+[PR #192](https://github.com/lukaskourilcz/react-express-app/pull/192).
+All 13 evolving/full-stack projects now contain 136 smaller cumulative stages;
+existing completion and drafts are retained. React restart/submit/results,
+QuickJS expectations, account-bound sessions and accessible workbench controls
+were repaired. Server React execution now uses disposable isolated VMs.
+
+| Check | Result |
+|---|---|
+| Catalogue references, including actual QuickJS | PASS — 385 tasks |
+| Built React iframe suites/protocol | PASS — 129 assertions |
+| Client regressions and all-project draft transitions | PASS — 42 tests |
+| devShark browser flow, EN/CS and light/dark | PASS — 9 checks |
+| StudyShark public browser coverage | PASS — 5 checks |
+| Responsive layout | PASS — 93 local StudyShark + 63 devShark dark/CS probes; production sweep and settled recheck recorded in report |
+| Types, launch contracts, learning paths, public HTML, bundle budget | PASS |
+| Full GitHub CI for both products, including browser/component/performance checks | PASS — `a0e332a`, run 35025211720 |
+| Production dependency audits | PASS — zero vulnerabilities |
+| Live database idempotency, retained pass, isolated drafts | PASS — synthetic transaction rolled back |
+| Real isolated VM forms, storage, network/credential isolation, loop termination | PASS — 6 integration checks |
+| Deployed API submissions (first stage of every project) | PASS — 13/13 on `a0e332a`, including the OIDC-backed React VM runner |
+| Recovery, load/concurrency, multi-account and physical-device acceptance | NOT RUN — #190 |
+| Hostile submission verdict integrity | OPEN — #191; VM isolation alone does not resolve this |
+
+The mobile workbench still requires a larger screen for editing, as before.
+Production was not promoted. See the [full audit](./launch-audit-2026-09-15.md)
+for exact scope, live-account changes, preview evidence and outstanding gates,
+and [operations](./react-grading-operations.md) for snapshot maintenance.
+
 ## Keyboard shortcut keycaps — 2026-09-15
 
 The right-aligned shortcut guide uses inline SVG keycaps for Control, Enter,

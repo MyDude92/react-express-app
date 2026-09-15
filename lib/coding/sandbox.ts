@@ -97,11 +97,26 @@ globalThis.console = {
 };
 `;
 
+/** JSON alone changes undefined/NaN/Infinity to null. Emit a lossless value
+ * expression for the authored expectations; learner input is never interpolated here. */
+function expectationSource(value: unknown): string {
+  if (value === undefined) return 'undefined';
+  if (typeof value === 'number') {
+    if (Number.isNaN(value)) return 'NaN';
+    if (value === Infinity) return 'Infinity';
+    if (value === -Infinity) return '-Infinity';
+    if (Object.is(value, -0)) return '-0';
+  }
+  if (Array.isArray(value)) return `[${value.map(expectationSource).join(',')}]`;
+  if (value && typeof value === 'object') return `Object.fromEntries([${Object.entries(value).map(([key, item]) => `[${JSON.stringify(key)},${expectationSource(item)}]`).join(',')}])`;
+  return JSON.stringify(value);
+}
+
 function program(code: string, calls: string[], expectations: unknown[] | null): string {
   const grading = Array.isArray(expectations);
   return `${PRELUDE}
 var __calls = ${JSON.stringify(calls)};
-var __expect = ${grading ? JSON.stringify(expectations) : 'null'};
+var __expect = ${grading ? expectationSource(expectations) : 'null'};
 (function () {
 ${code}
 ;Promise.all(__calls.map(async function (source) {

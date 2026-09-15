@@ -43,7 +43,22 @@ export function useReactHarness(): HarnessHandle {
   const pending = useRef<{ token: string; resolve: (run: HarnessRun) => void; timer: number } | null>(null);
   const current = useRef<HarnessRun | null>(null);
   const [frameKey, setFrameKey] = useState(0);
-  const readyWaiters = useRef<(() => void)[]>([]);
+  const readyWaiters = useRef<((ready: boolean) => void)[]>([]);
+  const readyRef = useRef(false);
+  const generation = useRef(0);
+
+  // Every caller must settle, including callers waiting for the frame to boot.
+  const cancel = useCallback(() => {
+    generation.current++;
+    readyRef.current = false;
+    readyWaiters.current.splice(0).forEach(resolve => resolve(false));
+    if (pending.current) {
+      window.clearTimeout(pending.current.timer);
+      pending.current.resolve({ ...current.current!, token: pending.current.token, status: 'timeout' });
+      pending.current = null;
+    }
+    current.current = null;
+  }, []);
 
   const settle = useCallback((next: HarnessRun) => {
     current.current = next;
@@ -61,8 +76,9 @@ export function useReactHarness(): HarnessHandle {
       const data = event.data as { type?: string; token?: string } & Record<string, unknown>;
       if (!data || typeof data.type !== 'string') return;
       if (data.type === 'ready') {
+        readyRef.current = true;
         setReady(true);
-        readyWaiters.current.splice(0).forEach((resolve) => resolve());
+        readyWaiters.current.splice(0).forEach((resolve) => resolve(true));
         return;
       }
       const active = current.current;
@@ -92,27 +108,30 @@ export function useReactHarness(): HarnessHandle {
       }
     };
     window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [settle]);
+    return () => { window.removeEventListener('message', onMessage); cancel(); };
+  }, [cancel, settle]);
 
   const reload = useCallback(() => {
+    cancel();
     setReady(false);
-    current.current = null;
-    if (pending.current) {
-      window.clearTimeout(pending.current.timer);
-      pending.current = null;
-    }
     setFrameKey((k) => k + 1);
-  }, []);
+  }, [cancel]);
 
   const waitReady = useCallback(() => new Promise<boolean>((resolve) => {
-    if (ready && frame.current?.contentWindow) return resolve(true);
-    const timer = window.setTimeout(() => resolve(false), READY_TIMEOUT_MS);
-    readyWaiters.current.push(() => { window.clearTimeout(timer); resolve(true); });
-  }), [ready]);
+    if (readyRef.current && frame.current?.contentWindow) return resolve(true);
+    const finish = (value: boolean) => {
+      window.clearTimeout(timer);
+      readyWaiters.current = readyWaiters.current.filter(waiter => waiter !== finish);
+      resolve(value);
+    };
+    const timer = window.setTimeout(() => finish(false), READY_TIMEOUT_MS);
+    readyWaiters.current.push(finish);
+  }), []);
 
   const start = useCallback(async (files: Record<string, string>, options: { tests: boolean; preview: boolean }): Promise<HarnessRun> => {
     const token = newToken();
+    const epoch = ++generation.current;
+    readyWaiters.current.splice(0).forEach(resolve => resolve(false));
     const base: HarnessRun = { token, status: 'running', compileError: null, previewError: null, cases: [], logs: [], passed: 0, failed: 0, total: 0, ran: options.tests };
     current.current = base;
     setRun(base);
@@ -122,6 +141,7 @@ export function useReactHarness(): HarnessHandle {
       pending.current = null;
     }
     const isReady = await waitReady();
+    if (epoch !== generation.current) return { ...base, status: 'timeout' };
     const target = frame.current?.contentWindow;
     if (!isReady || !target) {
       const timedOut: HarnessRun = { ...base, status: 'timeout' };

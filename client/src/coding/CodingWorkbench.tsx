@@ -228,6 +228,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
   const runLocal = useCallback(async () => {
     if (phase !== 'idle') return;
     setPhase('running');
+    setServerChecked(false);
     setFormatError(null);
     try {
       if (isReact) {
@@ -396,7 +397,16 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
 
   /* ── panels ─────────────────────────────────────────────────────────── */
   const localPassed = run ? runPassed(run) : null;
-  const reactRun: HarnessRun | null = harness.run;
+  // Server results replace the local run after Submit; otherwise a runner
+  // startup error looked like a stale failed browser test with no explanation.
+  const reactRun: HarnessRun | null = serverChecked && verdict && isReact && !checklist
+    ? {
+      token: harness.run?.token ?? 'server', status: verdict.codeError ? 'compile-error' : verdict.verdict === 'timeout' ? 'timeout' : 'done',
+      compileError: verdict.codeError, previewError: harness.run?.previewError ?? null,
+      cases: verdict.results.map((result, index) => ({name: harness.run?.cases[index]?.name ?? `${index + 1}`, status: result.pass ? 'pass' : 'fail', error: result.error ?? null, durationMs: 0})),
+      logs: harness.run?.logs ?? [], passed: verdict.results.filter(result => result.pass).length,
+      failed: verdict.results.filter(result => !result.pass).length, total: verdict.results.length, ran: true,
+    } : harness.run;
   const resultsBadge = isReact
     ? reactRun && reactRun.status === 'done' && reactRun.total > 0 ? `${reactRun.passed}/${reactRun.total}` : null
     : run && !run.codeError && run.results.length > 0 ? `${run.results.filter((r) => r.pass === true).length}/${run.results.length}` : null;
@@ -538,7 +548,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
       if (reactRun.status === 'timeout') return <p className="cd-note cd-note--warn">{t('coding.preview.timeout')}</p>;
       return (
         <>
-          {reactRun.status === 'done' && <p className="cd-summary">{t('coding.results.passing', { passed: reactRun.passed, total: reactRun.total })}{stale && <small>{t('coding.results.stale')}</small>}</p>}
+          {reactRun.status === 'done' && <p className="cd-summary">{t('coding.results.passing', { passed: reactRun.passed, total: reactRun.total })}{serverChecked && <small>{t('coding.results.serverNote')}</small>}{stale && <small>{t('coding.results.stale')}</small>}</p>}
           <ul className="cd-results">
             {reactRun.cases.map((one, index) => (
               <li key={index} className={`cd-result cd-result--${one.status}`}>
@@ -628,7 +638,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
       {reactRun?.previewError && <p className="cd-note cd-note--error">{t('coding.preview.error', { message: reactRun.previewError })}</p>}
       {reactRun?.status === 'timeout' && <p className="cd-note cd-note--warn">{t('coding.preview.timeout')} <FinButton type="button" className="cd-btn cd-btn--quiet" onClick={harness.reload}>{t('coding.preview.reload')}</FinButton></p>}
       {!harness.ready && <p className="cd-console__empty">{t('coding.preview.starting')}</p>}
-      <iframe key={harness.frameKey} ref={harness.iframeRef} src={HARNESS_URL} sandbox="allow-scripts" title={t('coding.preview.title')} className="cd-frame" />
+      <iframe key={harness.frameKey} ref={harness.iframeRef} src={HARNESS_URL} sandbox="allow-scripts allow-forms" title={t('coding.preview.title')} className="cd-frame" />
     </>
   );
 
@@ -691,7 +701,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
           <section className="cd-pane cd-pane--task" aria-labelledby={`${baseId}-title`}>
             <div className="cd-pane__head">
               <Kicker>{evolution ? t('coding.evolving.stage', { n: evolution.index + 1, total: evolution.challenge.stages.length }) : <>{trackLabel} · {tierLabel}{task.level > 0 ? ` · ${t('coding.level', { n: task.level })}` : ''}</>}</Kicker>
-              <h2 id={`${baseId}-title`}>{L(task.title)}</h2>
+              {mode === 'section' ? <h1 id={`${baseId}-title`}>{L(task.title)}</h1> : <h2 id={`${baseId}-title`}>{L(task.title)}</h2>}
               {formatOf(task) === 'debug' && (
                 <div className="cd-pane__meta">
                   <span className="cd-tag cd-tag--format">{t('coding.format.debug')}</span>
@@ -856,7 +866,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                 </div>
               </div>
             </div>
-            <div className="cd-hints" aria-label={t('coding.hint')}>
+            <div className="cd-hints" role="group" aria-label={t('coding.hint')}>
               <ol className="cd-hint-list">
               {rungs.slice(0, taken).map((rung, index) => (
                 <li key={index} className="cd-hint">

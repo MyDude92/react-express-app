@@ -104,12 +104,12 @@ it('groups all learning controls below the editor with revealed hints after the 
 
 it('keeps FullStack routes on real graders and preserves code across the React transition', () => {
   for (const project of EVOLVING_CHALLENGES.filter(p=>p.category==='fullstack')) {
-    expect(project.stages).toHaveLength(8);
-    expect(project.stages.map(evolvingTaskTrack)).toEqual(['javascript','typescript','typescript','typescript','react','react','react','react']);
+    expect(project.stages).toHaveLength(12);
+    expect(project.stages.map(evolvingTaskTrack)).toEqual(['javascript','typescript','typescript','typescript','typescript','react','react','react','react','react','react','react']);
   }
   const saved = 'function normalizeInput(value) { return null; }';
-  expect(prepareEvolvingDraft(saved,'fullstack',4)).toBe(saved+FULLSTACK_REACT_SCAFFOLD);
-  expect(prepareEvolvingDraft(saved,'fullstack',5)).toBe(saved);
+  expect(prepareEvolvingDraft(saved,'fullstack',5)).toBe(saved+FULLSTACK_REACT_SCAFFOLD);
+  expect(prepareEvolvingDraft(saved,'fullstack',6)).toBe(saved);
   expect(prepareEvolvingDraft(saved,undefined,4)).toBe(saved);
 });
 

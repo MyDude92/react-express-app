@@ -548,6 +548,8 @@ async function main() {
   assert.equal(codeOutcome({ visible: graded, hidden: null, check: null }), 'passed', 'the reference solution passes in the sandbox');
   const wrong = await runInSandbox({ code: 'const double = ns => ns;', calls: doubleTask!.tests!.map((t) => t.call), expectations: doubleTask!.tests!.map((t) => t.expected) });
   assert.equal(codeOutcome({ visible: wrong, hidden: null, check: null }), 'failed');
+  const exactValues = await runInSandbox({ code: '', calls: ['undefined', 'null', '({a:undefined,b:[undefined,NaN,Infinity,-0]})', 'null'], expectations: [undefined, null, {a:undefined,b:[undefined,NaN,Infinity,-0]}, undefined] });
+  assert.deepEqual(exactValues.results.map(result => result.pass), [true,true,true,false], 'server expectations preserve undefined and special numbers without confusing null');
   const hung = await runInSandbox({ code: 'const double = () => { while (true) {} };', calls: ['double([1])'], expectations: [[2]], deadlineMs: 300 });
   assert.equal(hung.timedOut, true, 'an infinite loop is cut off by the deadline');
   const escaped = await runInSandbox({ code: 'const peek = () => typeof process + typeof require + typeof fetch + typeof globalThis.Deno;', calls: ['peek()'], expectations: ['undefinedundefinedundefinedundefined'] });

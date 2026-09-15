@@ -14,7 +14,7 @@ import { DesignRunner } from '../../coding/DesignRunner';
 import { codingKeys, saveCodingDraft, useCodingProgress, useCodingTask } from '../../coding/api';
 import { useBookmarks, useSaveChallenge } from '../../coding/practice';
 import { CODING_INDEX } from '../../../../shared/coding-index';
-import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage, evolvingTaskTrack } from '../../../../shared/evolving';
+import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage, evolvingTaskTrack, evolvingPassed, evolvingUnlocked } from '../../../../shared/evolving';
 import { prepareEvolvingDraft } from '../../../../shared/coding-fullstack-support';
 import { SwimCta } from '../landing/LandingKit';
 import {
@@ -169,7 +169,7 @@ function EvolvingGallery({ passed, fullstack = false }: { passed: ReadonlySet<st
     <p className="cd-lead">{t(fullstack ? 'coding.evolving.fullstackBody' : 'coding.evolving.body')}</p>
     </div>
     <div ref={listRef} className={`cd-project-list${scrollable ? ' cd-project-list--scroll' : ''}`} tabIndex={scrollable ? 0 : undefined} role={scrollable ? 'region' : undefined} aria-label={scrollable ? t('coding.evolving.title') : undefined}>{challenges.map((challenge, index) => {
-      const completed = challenge.stages.filter(id => passed.has(id)).length;
+      const completed = challenge.stages.filter(id => evolvingPassed(id, passed)).length;
       return <article key={challenge.id} className="cd-project">
         <span className="cd-project__number" aria-hidden>{String(index + 1).padStart(2, '0')}</span>
         <div className="cd-project__name">
@@ -177,7 +177,7 @@ function EvolvingGallery({ passed, fullstack = false }: { passed: ReadonlySet<st
         <h3>{challenge.title[lang]}</h3>
         </div>
         <div className="cd-project__progress">
-          <div className="cd-stage-meter" aria-hidden>{challenge.stages.map(id => <span key={id} data-complete={passed.has(id)} />)}</div>
+          <div className="cd-stage-meter" aria-hidden>{challenge.stages.map(id => <span key={id} data-complete={evolvingPassed(id, passed)} />)}</div>
           <p>{t('coding.evolving.progress', { n: completed, total: challenge.stages.length })}</p>
         </div>
         <SwimCta label={completed === challenge.stages.length ? t('coding.evolving.complete') : t('coding.continue')} onClick={() => {const id=evolvingResume(challenge,passed);navigate(`/coding/${evolvingTaskTrack(id)}/${id}`);}} />
@@ -535,13 +535,14 @@ export function CodingTaskScreen() {
         {isAuthenticated && <SaveButton taskId={data.task.id} saved={bookmarks.data?.saved.includes(data.task.id) ?? false} busy={bookmarks.isPending || bookmarks.isError || save.isPending} onToggle={saved => save.mutate({ op: 'save', taskId: data.task.id, saved })} />}
       </div>
       {(bookmarks.isError || save.isError) && <p role="alert" className="cd-note cd-note--error">{t('coding.collections.failed')} <button className="cd-btn" onClick={() => void bookmarks.refetch()}>{t('coding.retry')}</button></p>}
-      {stage && <nav className="cd-actions" aria-label={t('coding.evolving.title')}>
+      {stage && <nav className="cd-actions cd-stage-nav" aria-label={t('coding.evolving.title')}>
         {stage.challenge.stages.map((id, index) => {
-          const available = index === 0 || stage.challenge.stages.slice(0, index).every(prior => progress.data?.tasks[prior]?.status === 'passed');
+          const passed = new Set(Object.entries(progress.data?.tasks ?? {}).filter(([, task]) => task.status === 'passed').map(([id]) => id));
+          const available = evolvingUnlocked(id, passed);
           const label = t('coding.evolving.stage', { n: index + 1, total: stage.challenge.stages.length });
           return available || id === data.task.id
-            ? <Link key={id} className="cd-btn" aria-current={id === data.task.id ? 'step' : undefined} to={`/coding/${evolvingTaskTrack(id)}/${id}`}>{progress.data?.tasks[id]?.status === 'passed' ? '✓ ' : ''}{label}</Link>
-            : <button key={id} className="cd-btn" disabled>{label}</button>;
+            ? <Link key={id} className={`cd-btn${id === data.task.id ? ' cd-btn--primary' : ''}`} aria-label={label} title={label} aria-current={id === data.task.id ? 'step' : undefined} to={`/coding/${evolvingTaskTrack(id)}/${id}`}>{evolvingPassed(id, passed) ? '✓ ' : ''}{index + 1}</Link>
+            : <button key={id} className="cd-btn" aria-label={label} title={label} disabled>{index + 1}</button>;
         })}
       </nav>}
       {data.task.track === 'system-design'

@@ -204,7 +204,7 @@ function HeaderBrand() {
     return (
       <Link
         to="/"
-        aria-label={t('nav.home')}
+        aria-label={t('nav.home', { brand: CURRENT_PRODUCT.brand })}
         className="ss-drawer-brand"
         style={{ padding: 0, color: subject.accent }}
       >
@@ -217,7 +217,7 @@ function HeaderBrand() {
     <>
       <Link
         to="/"
-        aria-label={t('nav.home')}
+        aria-label={t('nav.home', { brand: CURRENT_PRODUCT.brand })}
         className="ss-drawer-brand"
         style={{ padding: 0, color: 'var(--color-text-primary)' }}
       >

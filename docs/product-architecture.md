@@ -72,9 +72,14 @@ TypeScript submissions run in a QuickJS WebAssembly sandbox inside
 `api/quiz/roadmap.ts` (`resource=coding-submit`) with a 2.5 s deadline and
 virtual timers, TypeScript type tests run through the real compiler, and
 system-design answers are graded against a key sealed in the coding session.
-React tasks are graded the same way, in `lib/coding/react-runner.ts`: jsdom, a
-development React (the only build that exports `act`), and the task's Testing
-Library suite, loaded lazily so only a React submission pays for them. The
+React submissions use `lib/coding/react-isolated.ts`: a fresh Vercel Sandbox
+microVM with network denied, no application credentials, a 256 MB Node heap,
+and an externally enforced command deadline. The dependency-only snapshot is
+selected by `REACT_RUNNER_SNAPSHOT_ID`; the current grader bundle is uploaded
+on each run. `lib/coding/react-runner.ts` is trusted test/guest code only and
+must never evaluate learner code inside an API process. Both Coding and
+learning-path React submissions use this boundary. See
+[`react-grading-operations.md`](./react-grading-operations.md). The
 self-hosted `client/sandbox/` iframe stays for the preview and for the Run
 button's immediate feedback, but the verdict of record is the server's.
 Reference solutions never leave the server:
@@ -249,3 +254,13 @@ browser writes are security controls.
 ## AI features by product
 
 StudyShark keeps the dormant AI wiring (deeper explanations, Sharkira hints) behind the provider and budget gates in `lib/ai-provider.ts`. devShark ships none of it: `aiFeaturesAllowed()` in `lib/product-scope.ts` is false for the `webdev` deployment, so `api/quiz/submit.ts` refuses the `explanation` and `hint` resources with `feature_disabled`, `api/settings.ts` reports explanations as unavailable, and the quiz never renders the affordances. Coding-challenge hints are authored content whose last rung before the reference solution is a documentation link (`shared/coding-docs.ts`).
+
+### Evolving projects (September 2026)
+
+The thirteen projects now contain 136 stages: ten focused stages per single-track
+project, twelve per full-stack project. New `-start` checkpoints separate setup,
+data loading and form wiring from subsequent behavior. Earlier requirements and
+tests remain cumulative. Original task IDs retain their drafts and completion;
+a passed original milestone also covers its new prerequisite without synthesizing
+extra XP receipts. The shared evolving registry controls routes, unlocks and
+progress. The full catalogue contains 385 tasks.

@@ -1,3 +1,4 @@
+import { runReactSuite } from '../lib/coding/react-runner';
 // Content and grading contract for the learning paths.
 //   npm run test:paths
 //
@@ -182,7 +183,7 @@ async function main() {
       }
 
       if (SKIP_RUN) continue;
-      const graded = await withTimeout(gradePathCode(activity, code, solution.solution), 30_000, at);
+      const graded = await withTimeout(gradePathCode(activity, code, solution.solution, runReactSuite), 30_000, at);
       if (graded.state !== 'verified_pass') {
         const missed = graded.criteria.filter((criterion) => !criterion.passed).map((criterion) => criterion.id);
         const firstFailure = graded.code.results.findIndex((result) => result.pass !== true);

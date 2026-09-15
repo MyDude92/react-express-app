@@ -45,6 +45,23 @@ actEnvironment(false);
 // eslint-disable-next-line no-new-func -- fixtures authored in the repository, not learner input
 new Function(FETCH_STUB_SOURCE)();
 
+// Opaque-origin frames intentionally have no real browser storage. Exercises
+// get isolated, in-memory Storage objects, never the parent account's storage.
+function memoryStorage(): Storage {
+  const values = new Map<string, string>();
+  return {
+    get length() { return values.size; },
+    key: index => [...values.keys()][index] ?? null,
+    getItem: key => values.get(String(key)) ?? null,
+    setItem: (key, value) => { values.set(String(key), String(value)); },
+    removeItem: key => { values.delete(String(key)); },
+    clear: () => values.clear(),
+  };
+}
+for (const name of ['localStorage', 'sessionStorage']) {
+  Object.defineProperty(window, name, { value: memoryStorage(), configurable: false });
+}
+
 let currentToken = '';
 let previewRoot: ReactDOMClient.Root | null = null;
 
@@ -122,6 +139,8 @@ async function runInner(message: RunMessage) {
   currentToken = message.token;
   unmountPreview();
   RTL.cleanup();
+  localStorage.clear();
+  sessionStorage.clear();
   const files = message.files;
   if (typeof files['/App.js'] !== 'string') {
     post({ type: 'compile-error', token: message.token, message: 'Missing /App.js' });

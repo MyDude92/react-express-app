@@ -3,9 +3,9 @@
 // the server and a verdict from the learner's Run button are produced by the
 // same rules.
 //
-// Server-side grading is what makes a React verdict trustworthy: the browser
-// harness stays for the preview and for fast local feedback, but `passed` is
-// decided here, where the learner cannot reach.
+// This module is NOT a security boundary. Run it only for trusted reference
+// solutions in local tests, or inside the disposable microVM used by
+// react-isolated.ts. API handlers must never evaluate learner code here.
 //
 // Two details this module exists to get right:
 //
@@ -106,7 +106,7 @@ const compile = (source: string): string =>
 function runModule(source: string, resolve: (request: string) => unknown, extra: Record<string, unknown> = {}) {
   const module = { exports: {} as Record<string, unknown> };
   const names = ['require', 'module', 'exports', ...Object.keys(extra)];
-  // eslint-disable-next-line no-new-func -- the learner's component runs here, inside the graded process and nowhere near the database
+  // eslint-disable-next-line no-new-func -- isolated VM only; see module warning
   new Function(...names, compile(source))(resolve, module, module.exports, ...Object.values(extra));
   return module.exports;
 }
