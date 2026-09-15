@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { Sandbox } from '@vercel/sandbox';
+import { createRequire } from 'node:module';
+// Vercel's CommonJS function runtime may disable require(ESM). Bundle the SDK
+// and its ESM dependencies at build time instead of relying on that Node flag.
+const { Sandbox } = createRequire(join(process.cwd(), 'package.json'))(
+  './lib/coding/generated/vercel-sandbox.cjs',
+) as typeof import('@vercel/sandbox');
 import type { ReactSuiteOutcome } from './react-runner';
 
 // Keep operational diagnostics useful without logging learner code, SDK request

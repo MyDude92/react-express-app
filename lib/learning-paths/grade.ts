@@ -302,9 +302,9 @@ export async function gradePathCode(
 }
 
 async function gradeReactActivity(code: MergedCode, submitted: string, runner?: (input: {suite:string;appSource:string}) => Promise<ReactSuiteOutcome>): Promise<PathCodeGrade> {
-  const runReactSuite = runner ?? (await import('../coding/react-isolated')).runIsolatedReactSuite;
   let run;
   try {
+    const runReactSuite = runner ?? (await import('../coding/react-isolated')).runIsolatedReactSuite;
     run = await runReactSuite({ suite: code.suite ?? '', appSource: submitted });
   } catch {
     // The runtime itself could not start. That is infrastructure, not the

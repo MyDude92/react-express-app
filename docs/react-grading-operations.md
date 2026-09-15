@@ -17,8 +17,9 @@ Infrastructure failure returns an error and never falls back to local execution.
    user submissions or credentials are included.
 3. Set the returned `REACT_RUNNER_SNAPSHOT_ID` on the devShark Vercel project for
    Production and Preview. It is a server-only variable.
-4. Build normally. `build:react-runner` creates the current guest bundle; Vercel
-   includes it in the existing roadmap function. No thirteenth API is added.
+4. Build normally. `build:react-runner` creates the current guest bundle and a CommonJS SDK bundle;
+   its build check disables Node require(ESM) to match the deployed runtime. Vercel
+   includes both in the existing roadmap function. No thirteenth API is added.
 5. Run `npm run test:react-isolation` with the selected snapshot and credentials.
    This integration check creates disposable VMs and exercises credential/network
    isolation, representative suites and a synchronous infinite loop.
