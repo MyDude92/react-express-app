@@ -3,7 +3,7 @@
  * coding-submit and coding-reveal; `api/user/[op].ts` serves
  * coding-progress and coding-draft. The server grades JavaScript and
  * TypeScript in the QuickJS sandbox and system design against the sealed key;
- * React verdicts come from the browser harness and are recorded as such. */
+ * React submissions run authoritative suites in isolated server-side VMs. */
 
 import type { VercelRequest, VercelResponse } from '../vercel-types.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -313,13 +313,23 @@ async function gradeReact(task: CodingTask, code: string): Promise<Graded> {
   if (task.verify === 'checklist' || !task.suite) {
     return { verdict: 'passed', results: [], hidden: null, check: null, logs: [], codeError: null, design: null, designReference: null };
   }
-  const { runIsolatedReactSuite } = await import('./react-isolated');
   let run;
+  let loaded = false;
   try {
+    const { runIsolatedReactSuite } = await import('./react-isolated');
+    loaded = true;
     run = await runIsolatedReactSuite({ suite: task.suite, appSource: code });
   } catch (error) {
     // The runtime itself could not start; that is ours, not the learner's.
-    logEvent({ status: 500, kind: 'react_runtime', reason: error instanceof Error ? error.message : 'unknown' });
+    const code = (error as { code?: unknown } | undefined)?.code;
+    const missingModule = !loaded && error instanceof Error
+      ? error.message.match(/^Cannot find (?:module|package) ['"]([^'"]+)['"]/)?.[1]
+      : undefined;
+    logEvent({ status: 500, kind: 'react_runtime', category: error instanceof Error ? error.name : 'unknown',
+      phase: loaded ? 'run' : 'import',
+      ...(typeof code === 'string' && /^ERR_[A-Z_]+$|^MODULE_NOT_FOUND$/.test(code) ? { code } : {}),
+      ...(missingModule ? { missingModule } : {}),
+    });
     return {
       verdict: 'error', results: [], hidden: null, check: null, logs: [],
       codeError: 'The React runner could not start. Try again in a moment.',
