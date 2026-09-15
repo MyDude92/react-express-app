@@ -8,6 +8,8 @@ import type { PlayableCodingTask } from '../../shared/coding-catalog';
 import { FULLSTACK_REACT_SCAFFOLD, prepareEvolvingDraft } from '../../shared/coding-fullstack-support';
 import { EVOLVING_CHALLENGES, evolvingTaskTrack } from '../../shared/evolving';
 import { formatCode } from '../src/coding/runner/format';
+import { FinButton } from '../src/components/landing/LandingKit';
+import { generateFinHover } from '../src/lib/finHover';
 
 vi.mock('../src/coding/Editor', () => ({
   Editor: ({ value, onChange }: { value: string; onChange: (value: string) => void }) =>
@@ -28,6 +30,7 @@ function mount(onDraft = vi.fn()) {
 
 it('disables idle/empty formatting and enables it only for a real formatting change', async () => {
   mount();
+  expect(screen.getByRole('button', {name:'Hint',exact:true})).toBeInTheDocument();
   const format = screen.getByRole('button', { name: 'Format', exact: true });
   expect(screen.getByRole('button', { name: 'Reset', exact: true })).toBeDisabled();
   expect(format).toBeDisabled();
@@ -70,7 +73,9 @@ it('groups all learning controls below the editor with revealed hints after the 
   render(<MemoryRouter><LanguageProvider><CodingWorkbench task={task} session="test-session" locked={null} signedIn mode="section" /></LanguageProvider></MemoryRouter>);
   const run = screen.getByRole('button',{name:'Run',exact:true});
   const bar = run.closest('.cd-editor-actions')!;
-  expect(within(bar as HTMLElement).getByRole('button',{name:'Show the solution',exact:true})).toBeInTheDocument();
+  expect(within(bar as HTMLElement).getByRole('button',{name:'Solution',exact:true})).toBeInTheDocument();
+  expect(within(bar as HTMLElement).getByRole('button',{name:'Next hint',exact:true})).toBeInTheDocument();
+  expect(within(bar as HTMLElement).getByRole('button',{name:'Focus',exact:true})).toHaveAttribute('aria-pressed','false');
   expect(within(bar as HTMLElement).getByRole('button',{name:/Skip/i})).toBeInTheDocument();
   const hint = screen.getByText('Use a function.');
   expect(hint.closest('li')).toBeInTheDocument();
@@ -94,4 +99,31 @@ it('formats TSX without discarding TypeScript annotations', async () => {
   const formatted=await formatCode('type Item={name:string};export default function App(){return <p>Hello</p>}', 'react');
   expect(formatted).toContain('type Item = { name: string };');
   expect(formatted).toContain('<p>Hello</p>');
+});
+
+it('places authored stage links inside Resources, away from the task brief', () => {
+  const reference={title:{en:'Addition and numeric operators',cs:'Sčítání a číselné operátory'},url:'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Expressions_and_operators#arithmetic_operators'};
+  render(<MemoryRouter><LanguageProvider><CodingWorkbench task={{...task,references:[reference]}} session={null} locked={null} signedIn={false} mode="section" /></LanguageProvider></MemoryRouter>);
+  expect(screen.queryByRole('heading',{name:'Stage references'})).toBeNull();
+  fireEvent.click(screen.getByRole('tab',{name:/Resources/}));
+  const link=screen.getByRole('link',{name:reference.title.en});
+  expect(link).toHaveAttribute('href',reference.url);
+  expect(link.closest('[role="tabpanel"]')).toBeInTheDocument();
+  expect(link.closest('.cd-pane--task')).toBeNull();
+});
+
+it('keeps a randomized fin stable across button updates without changing its accessible name', () => {
+  const {rerender}=render(<FinButton onClick={()=>{}}>Continue</FinButton>);
+  const button=screen.getByRole('button',{name:'Continue',exact:true});
+  const profile=button.getAttribute('style');
+  rerender(<FinButton disabled>Continue</FinButton>);
+  expect(button).toHaveAttribute('style',profile);
+  expect(button).toBeDisabled();
+  expect(button.querySelector('.ss-fin-hover')).toHaveAttribute('aria-hidden','true');
+  const gentle=generateFinHover(()=>0);
+  const fast=generateFinHover(()=>0.99);
+  expect(gentle.direction).not.toBe(fast.direction);
+  expect(gentle.motion).not.toBe(fast.motion);
+  expect(gentle.shade).not.toBe(fast.shade);
+  expect(gentle.duration).not.toBe(fast.duration);
 });

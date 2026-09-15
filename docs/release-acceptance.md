@@ -1,5 +1,20 @@
 # Release acceptance matrix
 
+## Coding controls and randomized fins — 2026-09-15
+
+Stage links now appear in Resources. The compact, full-width action bar uses
+Hint / Next hint, Solution and Focus labels in both locales. Collection no
+longer exposes Shark Cards. Shared `generateFinHover`, `FinButton` and `SwimCta`
+assign stable random fin motion, shade, size, direction and speed, with keyboard
+focus support and static reduced-motion decoration.
+
+Verified: API typecheck, launch contracts, 18 client tests, production build,
+both production dependency audits (zero vulnerabilities), and diff whitespace
+checks. The live homepage's fade and swim effects were inspected in a remote
+browser as the animation reference. Local responsive verification remains
+blocked by missing Chrome/Chromium; the changed UI has not been visually
+verified in a local browser.
+
 ## Evolving / FullStack update — 2026-09-15
 
 This update expands the original ten projects to five stages each and adds

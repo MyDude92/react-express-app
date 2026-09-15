@@ -158,7 +158,7 @@ function EvolvingGallery({ passed, fullstack = false }: { passed: ReadonlySet<st
         <h3>{challenge.title[lang]}</h3>
         <p>{t('coding.evolving.progress', { n: completed, total: challenge.stages.length })}</p>
         <WaterlineProgress value={100 * completed / challenge.stages.length} label={challenge.title[lang]} />
-        <SwimCta dir={1} label={completed === challenge.stages.length ? t('coding.evolving.complete') : t('coding.continue')} onClick={() => {const id=evolvingResume(challenge,passed);navigate(`/coding/${evolvingTaskTrack(id)}/${id}`);}} />
+        <SwimCta label={completed === challenge.stages.length ? t('coding.evolving.complete') : t('coding.continue')} onClick={() => {const id=evolvingResume(challenge,passed);navigate(`/coding/${evolvingTaskTrack(id)}/${id}`);}} />
       </article>;
     })}</div>
   </section>;
@@ -166,6 +166,7 @@ function EvolvingGallery({ passed, fullstack = false }: { passed: ReadonlySet<st
 
 export function CodingHome() {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const progress = useCodingProgress(isAuthenticated);
   const { passed, statusOf } = useStatuses(progress.data);
@@ -185,7 +186,7 @@ export function CodingHome() {
           <p style={{ margin: 0, fontWeight: 650 }}>{next ? t('coding.continueWith', { title: next.title[lang] || next.title.en }) : t('coding.allDone')}</p>
           {dueCount > 0 && <p style={{ margin: '4px 0 0' }}><Link className="cd-link" to="/coding/review">{t('coding.review.count', { n: dueCount })}</Link></p>}
         </div>
-        {next && <Link className="cd-btn cd-btn--primary" to={`/coding/${next.track}/${next.id}`}>{t('coding.continue')}</Link>}
+        {next && <SwimCta label={t('coding.continue')} onClick={()=>navigate(`/coding/${next.track}/${next.id}`)} />}
       </div>
       <section aria-label={t('coding.title')} className="cd-tracks">
         {CODING_SECTION_TRACKS.map((track) => {

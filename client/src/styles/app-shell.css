@@ -674,3 +674,17 @@
 .ss-topic-article summary:focus-visible, .ss-topic-article a:focus-visible { outline: 3px solid var(--ss-focus); outline-offset: 4px; }
 .ss-topic-article .topic-practice p { margin-top: 1rem; }
 .ss-topic-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.75rem 1rem; background: var(--brand-accent); color: var(--brand-on-accent); border-radius: var(--radius-element); font-weight: 700; text-decoration: none; }
+.ss-fin-button { position: relative; overflow: hidden; isolation: isolate; }
+.ss-fin-button__label { position: relative; display: inline-flex; align-items: center; justify-content: inherit; gap: inherit; }
+.ss-fin-hover { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.ss-fin-hover__swimmer {
+  position: absolute; left: 0; bottom: calc(var(--fin-size) * -0.25); width: 100%; height: var(--fin-size);
+  opacity: 0; transform: translate(var(--fin-from-x), var(--fin-from-y)) scale(var(--fin-from-scale));
+  transition: transform var(--fin-duration) var(--ss-motion-ease), opacity var(--ss-motion-reveal) ease;
+}
+.ss-fin-hover svg { position: absolute; left: var(--fin-position); bottom: 0; transform: scaleX(var(--fin-flip)); }
+.ss-fin-button:is(:hover, :focus-visible):not(:disabled) .ss-fin-hover__swimmer { opacity: 1; transform: translate(var(--fin-to-x), 0) scale(1); }
+.ss-fin-button:focus-visible { outline: 3px solid var(--ss-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .ss-fin-hover__swimmer { transform: none !important; transition: none; }
+}

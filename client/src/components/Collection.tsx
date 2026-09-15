@@ -9,7 +9,6 @@ import LoadingScreen from './LoadingScreen';
 import { Kicker } from './landing/LandingKit';
 import '../coding/Coding.css';
 const Flashcards = lazy(() => import('./Flashcards'));
-const Cards = lazy(() => import('./Cards'));
 
 function SavedChallenges() {
   const { t, lang } = useLanguage();
@@ -37,11 +36,11 @@ export default function Collection() {
   const { t } = useLanguage();
   const [params, setParams] = useSearchParams();
   const coding = CURRENT_PRODUCT.id === 'devshark';
-  const tabs = coding ? ['questions', 'challenges', 'cards'] as const : ['questions', 'cards'] as const;
+  const tabs = coding ? ['questions', 'challenges'] as const : ['questions'] as const;
   const selected = tabs.find(tab => tab === params.get('tab')) ?? 'questions';
   return <div className="cd-page ss-pop">
     <header><Kicker>{t('collection.heading')}</Kicker><h1>{t('collection.heading')}</h1><p className="cd-lead">{t('collection.subtitle')}</p></header>
     <nav className="cd-actions" aria-label={t('collection.heading')}>{tabs.map(tab => <button key={tab} type="button" className={`cd-btn${selected === tab ? ' cd-btn--primary' : ''}`} aria-current={selected === tab ? 'page' : undefined} onClick={() => setParams({ tab })}>{t(`collection.${tab}`)}</button>)}</nav>
-    <Suspense fallback={<LoadingScreen label={t('common.loading')} />}>{selected === 'questions' ? <Flashcards embedded /> : selected === 'challenges' ? <SavedChallenges /> : <Cards embedded />}</Suspense>
+    <Suspense fallback={<LoadingScreen label={t('common.loading')} />}>{selected === 'questions' ? <Flashcards embedded /> : <SavedChallenges />}</Suspense>
   </div>;
 }

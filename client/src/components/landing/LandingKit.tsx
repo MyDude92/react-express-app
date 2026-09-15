@@ -7,7 +7,8 @@
 // See DESIGN_RULES.md for the fin-baseline, fade-in-only and accent rules these
 // implement.
 
-import { useState, type ComponentPropsWithoutRef, type ReactNode, type Ref } from 'react';
+import { forwardRef, useState, type ComponentPropsWithoutRef, type ReactNode, type Ref } from 'react';
+import { generateFinHover, finHoverStyle, type FinHoverAnimation } from '../../lib/finHover';
 import { useWaveVariant } from '../../lib/waveBank';
 import { useT } from '../../i18n/LanguageContext';
 import { useReducedMotion } from '../../lib/motion';
@@ -135,40 +136,33 @@ export function FadeFinCta({
   );
 }
 
-/** A CTA whose fin swims the full width on hover (see DESIGN_RULES §3). */
-export function SwimCta({ label, onClick, dir, disabled, size = 'md' }: { label: string; onClick: () => void; dir: 1 | -1; disabled?: boolean; size?: 'md' | 'lg' }) {
-  const [hover, setHover] = useState(false);
-  const reduce = useReducedMotion();
-  const distance = 260;
-  const active = hover && !disabled;
+/** Shared decoration: the fin is clipped behind the label and never takes input. */
+function FinHover({ animation }: { animation: FinHoverAnimation }) {
+  return <span className="ss-fin-hover" aria-hidden="true"><span className="ss-fin-hover__swimmer"><Fin size={animation.size} color="currentColor" opacity={animation.shade} /></span></span>;
+}
+
+export const FinButton = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<'button'>>(function FinButton({children, className = '', style, ...props}, ref) {
+  const [animation] = useState(() => generateFinHover());
+  return <button {...props} ref={ref} className={`ss-fin-button ${className}`} style={{...finHoverStyle(animation),...style}}>
+    <FinHover animation={animation} /><span className="ss-fin-button__label">{children}</span>
+  </button>;
+});
+
+/** Homepage-style fin effects with a stable randomized profile for each button. */
+export function SwimCta({ label, onClick, dir, disabled, size = 'md' }: { label: string; onClick: () => void; dir?: 1 | -1; disabled?: boolean; size?: 'sm' | 'md' | 'lg' }) {
+  const [animation] = useState(() => generateFinHover(Math.random,dir));
   return (
-    <button
-      type="button" onClick={onClick} disabled={disabled}
-      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      onFocus={() => setHover(true)} onBlur={() => setHover(false)}
+    <button type="button" onClick={onClick} disabled={disabled}
+      className={`ss-fin-button ss-swim-cta ss-swim-cta--${size}`}
       style={{
-        position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        ...finHoverStyle(animation),
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         background: 'var(--brand-accent)', color: 'var(--brand-on-accent)', border: 'none',
-        borderRadius: 'var(--radius-element)', padding: size === 'lg' ? '13px 26px' : '10px 18px', minHeight: 44,
-        fontFamily: 'var(--font-family-body)', fontWeight: 600, fontSize: size === 'lg' ? '1rem' : '0.95rem',
+        borderRadius: 'var(--radius-element)', padding: size === 'lg' ? '13px 26px' : size === 'sm' ? '5px 8px' : '10px 18px', minHeight: 'var(--swim-cta-height, 44px)',
+        fontFamily: 'var(--font-family-body)', fontWeight: 600, fontSize: size === 'lg' ? '1rem' : size === 'sm' ? '0.78rem' : '0.95rem',
         cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
-        filter: active ? 'brightness(0.92)' : 'none', transition: reduce ? 'none' : 'filter 0.2s ease, opacity 0.2s ease',
-      }}
-    >
-      <span
-        aria-hidden
-        style={{
-          position: 'absolute', left: dir === 1 ? '0' : '100%', right: dir === -1 ? undefined : '100%',
-          bottom: -9.5, lineHeight: 0, opacity: active ? 1 : 0,
-          transform: reduce
-            ? (dir === 1 ? 'scaleX(-1)' : 'none')
-            : `translateX(${active ? dir * distance : 0}px)${dir === 1 ? ' scaleX(-1)' : ''}`,
-          transition: reduce ? 'opacity var(--ss-motion-reveal) ease' : `transform var(${dir === 1 ? '--ss-motion-swim-forward' : '--ss-motion-swim-back'}) var(--ss-motion-ease), opacity var(--ss-motion-reveal) ease`, pointerEvents: 'none',
-        }}
-      >
-        <Fin size={38} color="var(--brand-on-accent)" opacity={0.28} />
-      </span>
-      <span style={{ position: 'relative' }}>{label}</span>
+      }}>
+      <FinHover animation={animation} /><span className="ss-fin-button__label">{label}</span>
     </button>
   );
 }

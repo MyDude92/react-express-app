@@ -65,11 +65,19 @@ stage drafts always take priority. Legacy stage IDs 1–3 remain unchanged.
 
 ## Playground layout
 
-Run/Submit/Format/Reset and Hints/Show solution/Skip share the bottom action
-bar. Focus mode and the report flag remain right-aligned. Revealed hints form
+Run/Submit/Format/Reset and Hint/Next hint/Solution/Skip share a compact bottom
+action bar spanning the playground width. Focus and the report flag remain right-aligned. Revealed hints form
 an ordered list after the controls. The editor's desktop minimum height is
 480px. Common learning controls remain reachable for narrow/puzzle layouts.
 Focus mode only uses split columns at desktop widths.
+Stage-specific references are part of the existing Resources tab, alongside
+technique documentation. Hint labels are "Hint" before the first reveal and
+"Next hint" afterwards; the exhausted button remains disabled.
+
+`generateFinHover` generates a stable per-button fin profile: shade, size,
+direction, speed, position and swim/rise/dive/fade/diagonal entrance. Coding
+controls and Continue CTAs share this implementation. Mouse hover and keyboard
+focus trigger the same decoration, with no movement under reduced motion.
 
 `shared/evolving.ts` owns ordered stage IDs and resume/unlock calculations.
 Each stage reuses `coding_progress` and `coding_drafts`, so no new table or
@@ -86,9 +94,9 @@ denominators, skip suggestions or short practice queues. The final stage is
 complete when passed, not when its reference solution is revealed. Cumulative
 tests ensure new work cannot discard earlier requirements.
 
-Collection replaces Cards in navigation. `/collection` has Questions, Coding
-challenges (devShark only), and Shark Cards views. It reuses account flashcards,
-coding bookmarks and collectible-card storage, preserving old data. `/cards`
+Collection replaces Cards in navigation. `/collection` has Questions and Coding
+challenges (devShark only). Shark Cards is no longer a Collection tab. It reuses
+account flashcards and coding bookmarks, preserving saved data. `/cards`
 continues to open the question deck for compatibility. Coding saves are also
 available inside the task. Unavailable saved challenges can still be removed.
 

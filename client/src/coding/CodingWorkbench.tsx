@@ -3,7 +3,7 @@
 // level (`mode="lesson"`). It never fetches on its own: the parent hands it a
 // playable task, its sealed session and the saved draft.
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import { Kicker, SwimCta } from '../components/landing/LandingKit';
+import { Kicker, SwimCta, FinButton } from '../components/landing/LandingKit';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { readJSON, writeJSON } from '../lib/storage';
@@ -390,7 +390,8 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
     : run && !run.codeError && run.results.length > 0 ? `${run.results.filter((r) => r.pass === true).length}/${run.results.length}` : null;
   const typesBadge = run?.check ? (run.check.codeErrors.length === 0 && run.check.typeTests.every((one) => one.pass) ? 'ok' : String(run.check.codeErrors.length + run.check.typeTests.filter((one) => !one.pass).length)) : null;
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
-  const resources = useMemo(() => taskResources(task.focus), [task.focus]);
+  const resources = useMemo(() => taskResources(task.focus).filter(entry => !task.references?.some(ref => ref.url === entry.url)), [task.focus, task.references]);
+  const resourceCount = resources.length + (task.references?.length ?? 0);
 
   // Approach comparisons open on a recorded pass, and the server decides that.
   // Giving up and reading the reference solution is a different thing: it does
@@ -427,7 +428,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
     ...(isReact ? [{ key: 'preview' as Tab, label: t('coding.tab.preview'), badge: null, good: null }] : []),
     // Reading the documentation is not asking for help: this tab is open from
     // the moment the task loads, costs no hint rung, and needs no failed run.
-    { key: 'resources', label: t('coding.tab.resources'), badge: resources.length > 0 ? String(resources.length) : null, good: null },
+    { key: 'resources', label: t('coding.tab.resources'), badge: resourceCount > 0 ? String(resourceCount) : null, good: null },
     // Only when there is something to compare. A tab that opens on nothing is
     // worse than no tab.
     ...(approachList.length > 0
@@ -453,13 +454,14 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
   /** Reference pages for every technique this task declares. No solutions, no
    * hidden tests: these are the same public pages a working engineer opens. */
   const renderResources = (): ReactNode => {
-    if (resources.length === 0) {
+    if (resourceCount === 0) {
       return <p className="cd-note">{t('coding.resources.empty')}</p>;
     }
     return (
       <div className="cd-resources">
         <p className="cd-shortcuts">{t('coding.resources.intro')}</p>
         <ul>
+          {task.references?.map(ref => <li key={ref.url}><a href={ref.url} target="_blank" rel="noreferrer">{L(ref.title)}</a></li>)}
           {resources.map((entry) => (
             <li key={entry.url}>
               <a href={entry.url} target="_blank" rel="noreferrer">
@@ -470,7 +472,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             </li>
           ))}
         </ul>
-        <p className="cd-shortcuts">{t('coding.resources.reviewed', { date: resources[0].reviewed })}</p>
+        {resources.length > 0 && !task.references?.length && <p className="cd-shortcuts">{t('coding.resources.reviewed', { date: resources[0].reviewed })}</p>}
       </div>
     );
   };
@@ -612,7 +614,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
   const renderPreview = (): ReactNode => (
     <>
       {reactRun?.previewError && <p className="cd-note cd-note--error">{t('coding.preview.error', { message: reactRun.previewError })}</p>}
-      {reactRun?.status === 'timeout' && <p className="cd-note cd-note--warn">{t('coding.preview.timeout')} <button type="button" className="cd-btn cd-btn--quiet" onClick={harness.reload}>{t('coding.preview.reload')}</button></p>}
+      {reactRun?.status === 'timeout' && <p className="cd-note cd-note--warn">{t('coding.preview.timeout')} <FinButton type="button" className="cd-btn cd-btn--quiet" onClick={harness.reload}>{t('coding.preview.reload')}</FinButton></p>}
       {!harness.ready && <p className="cd-console__empty">{t('coding.preview.starting')}</p>}
       <iframe key={harness.frameKey} ref={harness.iframeRef} src={HARNESS_URL} sandbox="allow-scripts" title={t('coding.preview.title')} className="cd-frame" />
     </>
@@ -648,7 +650,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
       )}
       {verdict.verdict === 'passed' && (
         <div className="cd-verdict__actions">
-          {mode === 'lesson' && onContinue && <button type="button" className="cd-btn cd-btn--primary" onClick={onContinue}>{t('coding.lesson.continue')}</button>}
+          {mode === 'lesson' && onContinue && <FinButton type="button" className="cd-btn cd-btn--primary" onClick={onContinue}>{t('coding.lesson.continue')}</FinButton>}
           {mode === 'section' && nextHref && <Link className="cd-btn cd-btn--primary" to={nextHref}>{t('coding.verdict.next')}</Link>}
           {mode === 'section' && backHref && <Link className="cd-btn" to={backHref}>{t('coding.verdict.back')}</Link>}
         </div>
@@ -693,10 +695,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
               <summary>{t('coding.evolving.previous')}</summary>
               {task.previousRequirements!.map((brief,index) => <Prompt key={index} className="cd-prompt" text={L(brief)} />)}
             </details>}
-            {Boolean(task.references?.length) && <nav aria-label={t('coding.evolving.references')}>
-              <h3>{t('coding.evolving.references')}</h3>
-              <ul className="cd-stage-references">{task.references!.map(ref => <li key={ref.url}><a href={ref.url} target="_blank" rel="noreferrer">{L(ref.title)}</a></li>)}</ul>
-            </nav>}
             {/* Beside the brief, so nothing is injected into code the learner
                 is reading or about to run. */}
             <TermsBar texts={[L(task.prompt), L(task.title)]} domain={glossaryDomainFor(task.track)} />
@@ -722,48 +720,105 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             </section>
           )}
 
-          <section className="cd-pane cd-pane--editor">
-            <div hidden={puzzleMode || pendingOnDesktop}>
+          <section className="cd-pane cd-pane--editor" hidden={puzzleMode || pendingOnDesktop}>
+            <div>
             <label className="cd-editor-label" htmlFor={`${baseId}-editor`}>{t('coding.editorLabel')}</label>
             <div id={`${baseId}-editor`}>
               <Editor minHeight={480} value={code} onChange={onCodeChange} track={task.track} ariaLabel={t('coding.editorLabel')} readOnly={Boolean(solution) && mode === 'lesson'} />
             </div>
             </div>
+
+          </section>
+        </div>
+
+        {/* A real separator: it takes focus, arrows move it, Home and End go to
+            the limits and Enter restores the default. It is hidden below the
+            two-column breakpoint, where there is nothing to split. */}
+        <div
+          className="cd-splitter"
+          role="separator"
+          tabIndex={0}
+          aria-orientation="vertical"
+          aria-label={t('coding.layout.splitter')}
+          aria-valuenow={layout.split}
+          aria-valuemin={SPLIT_MIN}
+          aria-valuemax={SPLIT_MAX}
+          onKeyDown={onSeparatorKeyDown}
+          onPointerDown={onSeparatorPointerDown}
+        />
+
+        <section className="cd-pane cd-pane--output" aria-label={t('coding.tab.results')}>
+          <div className="cd-tabs" role="tablist" onKeyDown={onTabKeyDown}>
+            {tabs.map((one) => (
+              <FinButton
+                key={one.key}
+                type="button"
+                role="tab"
+                id={`${baseId}-tab-${one.key}`}
+                aria-selected={tab === one.key}
+                aria-controls={`${baseId}-panel-${one.key}`}
+                // Roving tab stop: Tab reaches the strip once, arrows move
+                // within it, which is what `role="tab"` promises a reader.
+                tabIndex={tab === one.key ? 0 : -1}
+                ref={(node) => { tabRefs.current[one.key] = node; }}
+                className="cd-tab"
+                onClick={() => setTab(one.key)}
+              >
+                {one.label}
+                {one.badge && <span className={`cd-tab__badge${one.good === true ? ' cd-tab__badge--good' : one.good === false ? ' cd-tab__badge--bad' : ''}`}>{one.badge}</span>}
+              </FinButton>
+            ))}
+          </div>
+          {tabs.map((one) => (
+            // The panel takes focus itself: its content is often plain text,
+            // so without this a keyboard user tabs straight past the results.
+            <div key={one.key} role="tabpanel" tabIndex={tab === one.key ? 0 : -1} id={`${baseId}-panel-${one.key}`} aria-labelledby={`${baseId}-tab-${one.key}`} className="cd-panel" hidden={tab !== one.key}>
+              {one.key === 'results' && renderResults()}
+              {one.key === 'types' && renderTypes()}
+              {one.key === 'console' && renderConsole()}
+              {one.key === 'preview' && renderPreview()}
+              {one.key === 'resources' && renderResources()}
+              {one.key === 'approaches' && renderApproaches()}
+            </div>
+          ))}
+          {verdictCard}
+        </section>
+        <section className="cd-pane cd-pane--controls">
             <div className="cd-editor-actions">
               <div className="cd-actions">
                 {!puzzleMode && !pendingOnDesktop && <>
-                <button type="button" className="cd-btn" onClick={() => void runLocal()} disabled={busy}>
+                <FinButton type="button" className="cd-btn" onClick={() => void runLocal()} disabled={busy}>
                   {phase === 'running' ? (runPhase === 'compiling' ? t('coding.compiling') : t('coding.running')) : t('coding.run')}
-                </button>
-                <SwimCta dir={1} onClick={() => void submit()} disabled={submitDisabled} label={phase === 'submitting' ? t('coding.submitting') : t('coding.submit')} />
-                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={formatDisabled}>{t('coding.format')}</button>
-                <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={resetDisabled}>{t('coding.reset')}</button>
+                </FinButton>
+                <SwimCta size="sm" dir={1} onClick={() => void submit()} disabled={submitDisabled} label={phase === 'submitting' ? t('coding.submitting') : t('coding.submit')} />
+                <FinButton type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={formatDisabled}>{t('coding.format')}</FinButton>
+                <FinButton type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={resetDisabled}>{t('coding.reset')}</FinButton>
                 </>}
 
-                <button type="button" className="cd-btn" onClick={takeHint} disabled={!nextRung || !attemptReady || Boolean(solution)} aria-describedby={`${baseId}-hint-note`}>
-                  {nextRung ? t('coding.hintNext', { taken: taken + 1, total: rungs.length }) : t('coding.hintExhausted')}
-                </button>
+                <FinButton type="button" className="cd-btn" onClick={takeHint} disabled={!nextRung || !attemptReady || Boolean(solution)} aria-describedby={`${baseId}-hint-note`}>
+                  {taken === 0 ? t('coding.hint') : t('coding.hintNext')}
+                </FinButton>
                 {session && !solution && (
-                  <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reveal')} disabled={!canGiveUp(taken, rungs.length) || busy}>
+                  <FinButton type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reveal')} disabled={!canGiveUp(taken, rungs.length) || busy}>
                     {t('coding.giveUp')}
-                  </button>
+                  </FinButton>
                 )}
                 {signedIn && mode === 'section' && !skipResult && (
-                  <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setSkipping((open) => !open)} aria-expanded={skipping}>
+                  <FinButton type="button" className="cd-btn cd-btn--quiet" onClick={() => setSkipping((open) => !open)} aria-expanded={skipping}>
                     {t('coding.skip.action')}
-                  </button>
+                  </FinButton>
                 )}
               </div>
               <div className="cd-actions cd-actions--utility">
-                <button
+                <FinButton
                   type="button"
                   className="cd-btn cd-btn--quiet"
                   aria-pressed={layout.focus}
                   onClick={() => setLayout((current) => ({ ...current, focus: !current.focus }))}
                 >
-                  {t(layout.focus ? 'coding.layout.focusOff' : 'coding.layout.focusOn')}
-                </button>
-                <button
+                  {t('coding.layout.focusOn')}
+                </FinButton>
+                <FinButton
                   type="button"
                   className="cd-btn cd-btn--icon cd-btn--flag"
                   aria-label={t('coding.reportTask')}
@@ -771,7 +826,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                   onClick={() => setReportOpen(true)}
                 >
                   <FlagIcon size={18} />
-                </button>
+                </FinButton>
               </div>
             </div>
             <div className="cd-hints" aria-label={t('coding.hint')}>
@@ -830,10 +885,10 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                   </div>
                   {skipError && <p className="cd-note cd-note--error" role="alert">{skipError}</p>}
                   <div className="cd-actions cd-actions--end">
-                    <button type="button" className="cd-btn cd-btn--quiet" disabled={skipSubmitting} onClick={() => setSkipping(false)}>{t('coding.skip.cancel')}</button>
-                    <button type="submit" className="cd-btn cd-btn--primary" disabled={skipSubmitting}>
+                    <FinButton type="button" className="cd-btn cd-btn--quiet" disabled={skipSubmitting} onClick={() => setSkipping(false)}>{t('coding.skip.cancel')}</FinButton>
+                    <FinButton type="submit" className="cd-btn cd-btn--primary" disabled={skipSubmitting}>
                       {t('coding.skip.confirm')}
-                    </button>
+                    </FinButton>
                   </div>
                 </form>
               )}
@@ -852,8 +907,8 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                 <div className="cd-note cd-note--warn" role="alertdialog" aria-label={t('coding.giveUp')}>
                   <p style={{ margin: '0 0 8px' }}>{mode === 'lesson' ? t('coding.lesson.giveUpNote') : t('coding.giveUpConfirm')}</p>
                   <div className="cd-actions">
-                    <button type="button" className="cd-btn cd-btn--primary" onClick={() => void reveal()}>{t('coding.giveUp')}</button>
-                    <button type="button" className="cd-btn" onClick={() => setConfirming(null)} autoFocus>{t('coding.retry')}</button>
+                    <FinButton type="button" className="cd-btn cd-btn--primary" onClick={() => void reveal()}>{t('coding.giveUp')}</FinButton>
+                    <FinButton type="button" className="cd-btn" onClick={() => setConfirming(null)} autoFocus>{t('coding.retry')}</FinButton>
                   </div>
                 </div>
               )}
@@ -869,8 +924,8 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
               <div className="cd-note cd-note--warn" role="alertdialog" aria-label={t('coding.reset')}>
                 <p style={{ margin: '0 0 8px' }}>{t('coding.resetConfirm')}</p>
                 <div className="cd-actions">
-                  <button type="button" className="cd-btn cd-btn--primary" onClick={reset}>{t('coding.reset')}</button>
-                  <button type="button" className="cd-btn" onClick={() => setConfirming(null)} autoFocus>{t('coding.retry')}</button>
+                  <FinButton type="button" className="cd-btn cd-btn--primary" onClick={reset}>{t('coding.reset')}</FinButton>
+                  <FinButton type="button" className="cd-btn" onClick={() => setConfirming(null)} autoFocus>{t('coding.retry')}</FinButton>
                 </div>
               </div>
             )}
@@ -878,60 +933,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             {!online && <p className="cd-note cd-note--warn" role="status">{t('coding.offline')}</p>}
             {formatError && <p className="cd-note cd-note--error" role="status">{formatError}</p>}
             {submitError && <p className="cd-note cd-note--error" role="alert">{submitError}</p>}
-          </section>
-        </div>
-
-        {/* A real separator: it takes focus, arrows move it, Home and End go to
-            the limits and Enter restores the default. It is hidden below the
-            two-column breakpoint, where there is nothing to split. */}
-        <div
-          className="cd-splitter"
-          role="separator"
-          tabIndex={0}
-          aria-orientation="vertical"
-          aria-label={t('coding.layout.splitter')}
-          aria-valuenow={layout.split}
-          aria-valuemin={SPLIT_MIN}
-          aria-valuemax={SPLIT_MAX}
-          onKeyDown={onSeparatorKeyDown}
-          onPointerDown={onSeparatorPointerDown}
-        />
-
-        <section className="cd-pane cd-pane--output" aria-label={t('coding.tab.results')}>
-          <div className="cd-tabs" role="tablist" onKeyDown={onTabKeyDown}>
-            {tabs.map((one) => (
-              <button
-                key={one.key}
-                type="button"
-                role="tab"
-                id={`${baseId}-tab-${one.key}`}
-                aria-selected={tab === one.key}
-                aria-controls={`${baseId}-panel-${one.key}`}
-                // Roving tab stop: Tab reaches the strip once, arrows move
-                // within it, which is what `role="tab"` promises a reader.
-                tabIndex={tab === one.key ? 0 : -1}
-                ref={(node) => { tabRefs.current[one.key] = node; }}
-                className="cd-tab"
-                onClick={() => setTab(one.key)}
-              >
-                {one.label}
-                {one.badge && <span className={`cd-tab__badge${one.good === true ? ' cd-tab__badge--good' : one.good === false ? ' cd-tab__badge--bad' : ''}`}>{one.badge}</span>}
-              </button>
-            ))}
-          </div>
-          {tabs.map((one) => (
-            // The panel takes focus itself: its content is often plain text,
-            // so without this a keyboard user tabs straight past the results.
-            <div key={one.key} role="tabpanel" tabIndex={tab === one.key ? 0 : -1} id={`${baseId}-panel-${one.key}`} aria-labelledby={`${baseId}-tab-${one.key}`} className="cd-panel" hidden={tab !== one.key}>
-              {one.key === 'results' && renderResults()}
-              {one.key === 'types' && renderTypes()}
-              {one.key === 'console' && renderConsole()}
-              {one.key === 'preview' && renderPreview()}
-              {one.key === 'resources' && renderResources()}
-              {one.key === 'approaches' && renderApproaches()}
-            </div>
-          ))}
-          {verdictCard}
         </section>
       </div>
       {/* The same dialog the quiz uses, carrying the task id and the version of

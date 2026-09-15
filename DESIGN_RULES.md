@@ -46,14 +46,17 @@ active subject changes, so a correctly-built surface re-skins for free:
 When adding a subject-specific surface, change ONLY the accent, the wordmark and
 the topic set — the layout stays identical across platforms.
 
-## 3. Fade-in-only fin reveals — never animate `background-position`
+## 3. Fin reveals — never animate `background-position`
 
 Fin reveals fade in via an `opacity` transition (≈0.35s) on a child element.
 **Never** animate `background-position` to "drift" a fin in — it reads as jitter.
-The swim-through CTAs are the one place a fin *translates*: an absolutely
-positioned child fin fades in (opacity) and swims the full button width
-(`translateX(±260–280px)`, 2.6s / 3.8s ease-in-out), mirrored `scaleX(-1)` when
-swimming left→right. `overflow: hidden` on the button crops it.
+Interactive buttons use `generateFinHover` through `FinButton` or `SwimCta`.
+Generate once per mounted button: fade, swim, rise, dive, or diagonal entrance;
+randomize direction, size, opacity and duration. Animate only an absolutely
+positioned decorative child with opacity and transforms. Crop it with
+`overflow: hidden`, keep labels above it, and preserve the same variant across
+rerenders. Keyboard focus receives the same effect; disabled buttons do not.
+Reduced-motion mode shows a static fin without transitions.
 
 ## 4. The wave-variation rule
 
