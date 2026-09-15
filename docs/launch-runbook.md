@@ -29,6 +29,10 @@ is a historical audit and may describe issues that have since been resolved.
 | `PRODUCT_SUBJECT` | unset | `webdev` |
 | Canonical URL | `VITE_STUDYSHARK_URL` | `VITE_DEVSHARK_URL` |
 
+Apply this matrix to **both Production and Preview** on each project; Vercel does
+not inherit Production-only variables in previews. Without the devShark preview
+identity, the default StudyShark build rejects coding requests.
+
 Set `VITE_STUDYSHARK_URL` and `VITE_DEVSHARK_URL` on both deployments. General
 subject brands are internal StudyShark links and have no separate deployment or
 URL. Configure the same Supabase project only if shared accounts and progress
@@ -47,6 +51,10 @@ Google OAuth must allow both production origins and their callback URLs.
 Supabase Realtime must be enabled for multiplayer Broadcast channels. The app
 automatically uses a short polling fallback while Realtime is disconnected and
 a slow healing poll while connected.
+
+devShark React grading additionally requires `REACT_RUNNER_SNAPSHOT_ID` and
+Vercel OIDC in both environments. Follow [React grading operations](./react-grading-operations.md)
+for dependency snapshot preparation, isolation checks, resource limits and rollback.
 
 ## Database rollout
 

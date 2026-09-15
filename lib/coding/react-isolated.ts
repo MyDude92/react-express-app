@@ -3,6 +3,18 @@ import { join } from 'node:path';
 import { Sandbox } from '@vercel/sandbox';
 import type { ReactSuiteOutcome } from './react-runner';
 
+// Keep operational diagnostics useful without logging learner code, SDK request
+// bodies, credentials, or arbitrary error messages.
+function runnerFailure(phase: string, cause?: unknown): Error {
+  const error = new Error('React grading infrastructure is unavailable', { cause });
+  const code = (cause as { code?: unknown } | undefined)?.code;
+  const status = (cause as { response?: { status?: unknown } } | undefined)?.response?.status;
+  const detail = code === 'ENOENT' ? 'MissingFile' :
+    typeof status === 'number' && status >= 400 && status <= 599 ? `Http${status}` : '';
+  error.name = `ReactRunner${phase}${detail}`;
+  return error;
+}
+
 const deadline = (): ReactSuiteOutcome => ({
   cases: [],
   passed: 0,
@@ -21,10 +33,10 @@ export async function runIsolatedReactSuite(input: {
   appSource: string;
 }): Promise<ReactSuiteOutcome> {
   const snapshotId = process.env.REACT_RUNNER_SNAPSHOT_ID;
-  if (!snapshotId) throw new Error('React runner snapshot is not configured');
+  if (!snapshotId) throw runnerFailure('Configuration');
   const runner = await readFile(
     join(process.cwd(), 'lib/coding/generated/react-sandbox.cjs'),
-  );
+  ).catch((error) => { throw runnerFailure('Artifact', error); });
   const signal = AbortSignal.timeout(22_000);
   const credentials =
     process.env.VERCEL_TOKEN &&
@@ -44,7 +56,7 @@ export async function runIsolatedReactSuite(input: {
     timeout: 25_000,
     resources: { vcpus: 1 },
     signal,
-  });
+  }).catch((error) => { throw runnerFailure('Startup', error); });
   try {
     await sandbox.writeFiles(
       [
@@ -97,7 +109,7 @@ export async function runIsolatedReactSuite(input: {
     };
   } catch (error) {
     if (signal.aborted) return deadline();
-    throw error;
+    throw runnerFailure('Execution', error);
   } finally {
     // A bounded cleanup call plus the VM's expiry covers lost connections too.
     await sandbox
