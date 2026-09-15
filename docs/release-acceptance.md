@@ -20,6 +20,13 @@ all 323 task content/reference-solution contracts, both production dependency
 audits (zero vulnerabilities), and diff checks passed. Local responsive checking
 remains blocked by missing Chrome/Chromium.
 
+Production verification confirmed the repaired calculator passes 6/6 visible
+and 1/1 hidden checks on the server. Browser geometry confirmed equal-height
+editor/results panes, controls below both, no horizontal overflow and zero
+revealed hints on entry. CI's unused-code gate found the two orphaned Shark
+Cards client files from the earlier removal; removing them restores both the
+unused-code and security gates without changing the application bundle.
+
 ## Activity-only application scrollbars — 2026-09-15
 
 Native scrollbar tracks and idle thumbs are transparent across the app. A
