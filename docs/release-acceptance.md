@@ -1,5 +1,18 @@
 # Release acceptance matrix
 
+## Compact failure feedback — 2026-09-15
+
+Automatic failure feedback (including “Nothing came back”) now sits below the
+verdict at the bottom of the Results board, visible only on the Results tab.
+The compact treatment uses 0.8rem type, 8px/10px padding, tight line spacing,
+and a sentence-case label. Explicitly requested hints remain below the toolbar.
+EN/CS text and the accessible status announcement are retained. Commands use
+a fixed 12px gap with no space-between distribution.
+
+Production build, nine workbench tests, API types, launch contracts, both production dependency
+audits (zero vulnerabilities), and diff checks passed. Local responsive checking
+could not run without Chrome/Chromium; live visual verification is outstanding.
+
 ## Workbench command spacing and guidance — 2026-09-15
 
 Desktop commands share one left-aligned row, including Focus and Report.

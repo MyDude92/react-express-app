@@ -775,6 +775,12 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
             </div>
           ))}
           {verdictCard}
+          {tab === 'results' && shownHint && (
+            <div className="cd-hint cd-hint--failure" role="status">
+              <strong className="cd-hint__label">{t(`coding.failure.${shownHint.category}` as never)}</strong>
+              <Prompt text={shownHint.body[lang] || shownHint.body.en} />
+            </div>
+          )}
         </section>
         <section className="cd-pane cd-pane--controls">
             <div className="cd-editor-actions">
@@ -829,14 +835,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
               </div>
             </div>
             <div className="cd-hints" aria-label={t('coding.hint')}>
-              {shownHint && (
-                <div className="cd-hint cd-hint--failure" role="status">
-                  <span className="cd-hint__label">
-                    {t(`coding.failure.${shownHint.category}` as never)}
-                  </span>
-                  <Prompt text={shownHint.body[lang] || shownHint.body.en} />
-                </div>
-              )}
               <ol className="cd-hint-list">
               {rungs.slice(0, taken).map((rung, index) => (
                 <li key={index} className="cd-hint">

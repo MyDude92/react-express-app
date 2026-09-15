@@ -304,7 +304,7 @@
 .cd-action-guidance p:empty { display: none; }
 @media (min-width: 1024px) {
   .cd-editor-actions { grid-template-columns: minmax(max-content, 2.2fr) minmax(0, 1fr); }
-  .cd-actions--commands { flex-wrap: nowrap; justify-content: space-between; gap: clamp(10px, 1vw, 20px); }
+  .cd-actions--commands { flex-wrap: nowrap; gap: 12px; }
   .cd-actions--commands > .cd-btn { flex-shrink: 0; white-space: nowrap; }
 }
 .cd-pane--controls { grid-column: 1 / -1; min-width: 0; }
@@ -479,9 +479,15 @@
 /* The failure-specific hint. Marked by an accent edge and its own label, not
    by colour alone: the label says which kind of failure it is. */
 .cd-hint--failure {
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  line-height: 1.4;
   border-left: 3px solid var(--brand-accent);
   background: color-mix(in srgb, var(--brand-accent) 7%, transparent);
 }
+
+.cd-hint--failure .cd-hint__label { margin-bottom: 2px; font-size: inherit; text-transform: none; letter-spacing: normal; color: var(--color-text-primary); }
+.cd-hint--failure p { margin: 0; }
 
 /* Saved challenges, collections, filters and short sessions. */
 .cd-row-item { display: flex; align-items: stretch; gap: 6px; }
