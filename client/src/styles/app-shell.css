@@ -223,7 +223,7 @@
 }
 @keyframes ssWaterlineDrift {
   from { transform: translateX(0); }
-  to { transform: translateX(48px); }
+  to { transform: translateX(var(--ss-waterline-distance, 48px)); }
 }
 @keyframes ssProgressFinSwim {
   0%, 100% { transform: translateY(0) rotate(-2deg); }
@@ -231,7 +231,8 @@
   70% { transform: translateY(1px) rotate(-5deg); }
 }
 .ss-waterline-drift {
-  animation: ssWaterlineDrift 1.8s linear infinite;
+  animation: ssWaterlineDrift var(--ss-waterline-duration, 1.8s) linear infinite;
+  animation-delay: var(--ss-waterline-delay, 0s);
   transform-box: fill-box;
 }
 .ss-waterline-reveal {
@@ -246,6 +247,11 @@
   transform-origin: center 75%;
   animation: ssProgressFinSwim 1.45s ease-in-out infinite;
 }
+@keyframes ssWaterlineFinSway {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(1px); }
+}
+.ss-waterline-fin-motion { animation-name: ssWaterlineFinSway; }
 @media (prefers-reduced-motion: reduce) {
   .ss-float { animation: none !important; }
   /* The quiz progress fin snaps instead of gliding. */
@@ -684,7 +690,7 @@
 }
 .ss-fin-hover svg { position: absolute; left: var(--fin-position); bottom: 0; transform: scaleX(var(--fin-flip)); }
 .ss-fin-button:hover:enabled .ss-fin-hover__swimmer,
-.ss-fin-button:focus-visible:enabled .ss-fin-hover__swimmer { opacity: 1; transform: translate(var(--fin-to-x), 0) scale(1); }
+.ss-fin-button:focus-visible:enabled .ss-fin-hover__swimmer { opacity: 1; transform: translate(var(--fin-to-x), var(--fin-to-y, 0)) scale(1); }
 .ss-fin-button:focus-visible { outline: 3px solid var(--ss-focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   .ss-fin-hover__swimmer { transform: none !important; transition: none; }

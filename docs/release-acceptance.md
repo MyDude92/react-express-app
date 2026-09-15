@@ -1,5 +1,23 @@
 # Release acceptance matrix
 
+## Waterline variation and themed scrolling — 2026-09-15
+
+The evolving list uses a thin rounded scrollbar with shared surface, text and
+brand tokens, including WebKit styling. `generateWaterline()` varies wavelength,
+amplitude, direction, phase and speed once per mounted component. Coding track
+waves opt into zero, one or two decorative fins, with separated positions,
+varied sizes, opacity and gentle movement that stays in the water. Progress
+fill remains accurate and its clip no longer drifts with the wave. Quiz and
+typing retain their endpoint markers.
+
+Hover fins never start above the button. Dives now move diagonally downward;
+all vertical offsets stay at or below the bottom baseline. Reduced-motion
+rules continue to freeze the decorative movement.
+
+Production build, API typecheck, launch contracts, 18 client tests, both
+production dependency audits (zero vulnerabilities) and diff checks passed.
+Local responsive verification is blocked by missing Chrome/Chromium.
+
 ## Five-row evolving challenge list — 2026-09-15
 
 Lists longer than five projects now scroll internally. A ResizeObserver measures

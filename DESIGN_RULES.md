@@ -57,8 +57,16 @@ positioned decorative child with opacity and transforms. Crop it with
 `overflow: hidden`, keep labels above it, and preserve the same variant across
 rerenders. Keyboard focus receives the same effect; disabled buttons do not.
 Reduced-motion mode shows a static fin without transitions.
+Fins never enter from above. Their baseline stays at or below the component's
+bottom edge: emergence starts below it, and dives travel diagonally downward.
 
 ## 4. The wave-variation rule
+
+`generateWaterline()` assigns progress waves a stable randomized wavelength,
+amplitude, direction, speed and phase. Coding track decoration opts into zero,
+one or two fins with varied sizes and separated positions. These decorative
+fins sit in the water; the accent fill and numeric label still show real
+progress. Quiz and typing progress keep their fin at the progress endpoint.
 
 Every wavy connector gets **its own** amplitude, phase and wavelength — no two
 waves in a path are the same tile. A roadmap path, a set of level connectors, a

@@ -223,7 +223,7 @@ export function CodingHome() {
                 <h2>{t(`coding.track.${track}` as never)}</h2>
                 <span className="cd-track__count">{t('coding.progress', { passed: done, total: tasks.length })}</span>
               </div>
-              <WaterlineProgress value={tasks.length ? (100 * done) / tasks.length : 0} label={t('coding.progress', { passed: done, total: tasks.length })} />
+              <WaterlineProgress decorativeFins value={tasks.length ? (100 * done) / tasks.length : 0} label={t('coding.progress', { passed: done, total: tasks.length })} />
               <p className="cd-track__blurb">{t(`coding.trackBlurb.${track}` as never)}</p>
               </div>
               <span className="cd-track-entry__arrow" aria-hidden>↗</span>
@@ -355,7 +355,7 @@ export function CodingTrackScreen() {
         <h1>{t(`coding.track.${track}` as never)}</h1>
         <p className="cd-lead">{t(`coding.trackBlurb.${track}` as never)}</p>
         <div style={{ marginTop: 12, maxWidth: 420 }}>
-          <WaterlineProgress value={tasks.length ? (100 * done) / tasks.length : 0} label={t('coding.progress', { passed: done, total: tasks.length })} />
+          <WaterlineProgress decorativeFins value={tasks.length ? (100 * done) / tasks.length : 0} label={t('coding.progress', { passed: done, total: tasks.length })} />
           <p className="cd-track__count" style={{ margin: '6px 0 0' }}>{t('coding.progress', { passed: done, total: tasks.length })}</p>
         </div>
       </header>

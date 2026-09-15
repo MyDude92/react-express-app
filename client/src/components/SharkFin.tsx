@@ -1,4 +1,5 @@
-import { useId } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
+import { generateWaterline } from '../lib/waveBank';
 
 // StudyShark branding flourish: a dorsal-fin glyph, plus an animated "swimming"
 // variant used in the header wordmark and the loading screen. Animations respect
@@ -81,31 +82,33 @@ export function Waterline({ color = 'var(--brand-accent)' }: { color?: string })
  * quiz/challenge play flow. `value` is 0–100. Decorative marker; the semantics
  * live on the surrounding label.
  */
-export function WaterlineProgress({ value, label }: { value: number; label?: string }) {
+export function WaterlineProgress({ value, label, decorativeFins = false }: { value: number; label?: string; decorativeFins?: boolean }) {
+  const [wave] = useState(() => generateWaterline());
   const clamped = Math.max(0, Math.min(100, value));
   const pct = `${clamped}%`;
   const clipId = useId().replace(/:/g, '');
   // Begin and end beyond the viewport so translating one full wavelength is
   // seamless: the water keeps moving without exposing either edge.
-  const d = 'M-48 9 Q -36 5 -24 9 T 0 9 T 24 9 T 48 9 T 72 9 T 96 9 T 120 9 T 144 9 T 168 9 T 192 9 T 216 9 T 240 9 T 264 9 T 288 9 T 312 9 T 336 9 T 360 9 T 384 9 T 408 9 T 432 9 T 456 9 T 480 9 T 504 9 T 528 9 T 552 9 T 576 9 T 600 9 T 624 9 T 648 9';
+  const d = wave.path;
   return (
     <div
       role="progressbar"
       aria-label={label}
-      aria-valuenow={Math.round(value)}
+      aria-valuenow={Math.round(clamped)}
       aria-valuemin={0}
       aria-valuemax={100}
-      style={{ position: 'relative', height: 18 }}
+      style={{ position: 'relative', height: 18, '--ss-waterline-distance': `${wave.wavelength * wave.direction}px`, '--ss-waterline-duration': `${wave.duration}s`, '--ss-waterline-delay': `${wave.delay}s` } as CSSProperties}
     >
-      <svg aria-hidden viewBox="0 0 600 18" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: 18, overflow: 'visible' }}>
+      <svg aria-hidden viewBox="0 0 600 18" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: 18, overflow: 'hidden' }}>
         <defs><clipPath id={clipId}><rect className="ss-waterline-reveal" x="0" y="0" width="600" height="18" style={{ transform: `scaleX(${clamped / 100})` }} /></clipPath></defs>
         <path className="ss-waterline-drift" d={d} fill="none" stroke="var(--color-border)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <path className="ss-waterline-drift" d={d} fill="none" stroke="var(--brand-accent)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" clipPath={`url(#${clipId})`} />
+        <g clipPath={`url(#${clipId})`}><path className="ss-waterline-drift" d={d} fill="none" stroke="var(--brand-accent)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" /></g>
       </svg>
-      {/* Fin marker riding the fill edge. */}
-      <div className="ss-progress-fin" aria-hidden style={{ position: 'absolute', top: -3, left: pct, transform: 'translateX(-50%)', lineHeight: 0 }}>
+      {decorativeFins ? wave.fins.map((fin, index) => <div key={index} aria-hidden style={{position:'absolute', top:12-fin.size*.75, left:`${fin.position}%`, transform:`translateX(-50%) scaleX(${fin.direction})`, lineHeight:0, opacity:fin.opacity}}>
+        <span className="ss-progress-fin-motion ss-waterline-fin-motion" style={{animationDuration:`${fin.duration}s`,animationDelay:`${fin.delay}s`}}><SharkFin size={fin.size} /></span>
+      </div>) : <div className="ss-progress-fin" aria-hidden style={{ position: 'absolute', top: -3, left: pct, transform: 'translateX(-50%)', lineHeight: 0 }}>
         <span className="ss-progress-fin-motion"><SharkFin size={16} /></span>
-      </div>
+      </div>}
     </div>
   );
 }

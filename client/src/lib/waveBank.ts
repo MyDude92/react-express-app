@@ -24,6 +24,28 @@
 
 import { useId } from 'react';
 
+/** Stable per mounted waterline; injected randomness also supports previews. */
+export function generateWaterline(random: () => number = Math.random) {
+  const wavelength = 36 + Math.floor(random() * 29);
+  const amplitude = 2 + random() * 3;
+  const direction = random() < .5 ? -1 : 1;
+  const duration = 2.5 + random() * 3;
+  const delay = -random() * duration;
+  const count = Math.floor(random() * 3);
+  const fins = Array.from({length: count}, (_, index) => ({
+    position: count === 1 ? 12 + random() * 76 : 12 + index * 48 + random() * 28,
+    size: 13 + Math.floor(random() * 10),
+    direction: random() < .5 ? -1 : 1,
+    opacity: .65 + random() * .35,
+    duration: 1.5 + random() * 2,
+    delay: -random() * 3,
+  }));
+  const step = wavelength / 2;
+  let path = `M${-wavelength} 9 Q${-wavelength + step / 2} ${9 - amplitude} ${-wavelength + step} 9`;
+  for (let x = 0; x <= 600 + wavelength * 2; x += step) path += ` T${x} 9`;
+  return {path, wavelength, direction, duration, delay, fins};
+}
+
 export const WAVE_VARIANT_COUNT = 8;
 
 /** A variant number, 1-based, as the CSS classes name them. */
