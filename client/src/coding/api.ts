@@ -106,7 +106,9 @@ export function useCodingTask(id: string | undefined) {
     enabled: Boolean(id),
     queryFn: ({ signal }) => fetchCodingTask(id!, signal),
     staleTime: 0,
-    gcTime: 60_000,
+    // Task responses contain an editable starting draft. Do not mount a new
+    // stage from an old response while its current draft is being fetched.
+    gcTime: 0,
   });
 }
 

@@ -119,3 +119,10 @@ stable stage IDs, sequential unlocks, resume positions and cumulative tests.
 Release verification is recorded in `docs/release-acceptance.md`. Live
 cross-device persistence and visual layouts require authenticated browser
 acceptance; unit/content checks do not establish that acceptance.
+
+Stage handoff retains the exact submitted code in the local draft after a pass
+and after successful autosaves. A stage's own local or account draft takes
+priority; otherwise the prior stage's local code backs up the server's existing
+carry-forward path. The first FullStack React stage appends its scaffold to the
+API implementation. Inactive task responses are discarded so a previously
+visited stage cannot mount an obsolete starter while its draft refreshes.

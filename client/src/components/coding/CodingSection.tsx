@@ -15,6 +15,7 @@ import { codingKeys, saveCodingDraft, useCodingProgress, useCodingTask } from '.
 import { useBookmarks, useSaveChallenge } from '../../coding/practice';
 import { CODING_INDEX } from '../../../../shared/coding-index';
 import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage, evolvingTaskTrack } from '../../../../shared/evolving';
+import { prepareEvolvingDraft } from '../../../../shared/coding-fullstack-support';
 import { SwimCta } from '../landing/LandingKit';
 import {
   CODING_SECTION_TRACKS,
@@ -472,15 +473,24 @@ export function CodingTaskScreen() {
     if (isAuthenticated) {
       setDraftState('saving');
       saveCodingDraft(taskId, code).then(() => {
-        if (readString(draftKey(taskId)) === code) removeStored(draftKey(taskId));
+        // Evolving code is also the offline starting point of the next stage.
+        if (!evolvingStage(taskId) && readString(draftKey(taskId)) === code) removeStored(draftKey(taskId));
         setDraftState('saved');
       }).catch(() => setDraftState('local'));
     } else setDraftState('local');
   }, [taskId, isAuthenticated]);
 
-  const onVerdict = useCallback((verdict: CodingVerdictResponse) => {
+  const onVerdict = useCallback((verdict: CodingVerdictResponse, submittedCode?: string) => {
     if (verdict.progress) void queryClient.invalidateQueries({ queryKey: codingKeys.progress() });
-    if (verdict.verdict === 'passed' && taskId) removeStored(draftKey(taskId));
+    if (verdict.verdict === 'passed' && taskId) {
+      const stage = evolvingStage(taskId);
+      if (stage) {
+        // Capture the submitted snapshot synchronously, before Next can navigate
+        // and before a delayed autosave finishes. Never seed over a next-stage draft.
+        if (submittedCode !== undefined) writeString(draftKey(taskId), submittedCode);
+        if (stage.next) queryClient.removeQueries({queryKey:codingKeys.task(stage.next), exact:true, type:'inactive'});
+      } else removeStored(draftKey(taskId));
+    }
   }, [queryClient, taskId]);
 
   const onRetry = useCallback(() => {
@@ -512,7 +522,10 @@ export function CodingTaskScreen() {
     : next && next.id !== data.task.id ? `/coding/${next.track}/${next.id}` : null;
   const backHref = stage?.challenge.category === 'fullstack' ? '/coding/fullstack' : `/coding/${data.task.track}`;
   const localDraft = readString(draftKey(data.task.id));
-  const initialCode = localDraft ?? data.draft ?? null;
+  const previousLocal = stage?.previous ? readString(draftKey(stage.previous)) : null;
+  const initialCode = localDraft ?? data.draft ?? (stage && previousLocal !== null
+    ? prepareEvolvingDraft(previousLocal, stage.challenge.category, stage.index)
+    : null);
 
   return (
     <div className="cd-page ss-pop">

@@ -38,7 +38,7 @@ export interface CodingWorkbenchProps {
   initialCode: string | null;
   mode: 'section' | 'lesson';
   onDraft?: (code: string) => void;
-  onVerdict?: (verdict: CodingVerdictResponse) => void;
+  onVerdict?: (verdict: CodingVerdictResponse, submittedCode?: string) => void;
   onRevealed?: () => void;
   nextHref?: string | null;
   backHref?: string;
@@ -283,7 +283,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
       }
       if (result.verdict !== 'passed') setFailedRun(true);
       setVerdict(result);
-      onVerdict?.(result);
+      onVerdict?.(result, code);
     } catch (error) {
       if (error instanceof ApiError && error.code === 'invalid_session') setSubmitError(t('coding.verdict.sessionExpired'));
       else setSubmitError(t('coding.verdict.submitError'));

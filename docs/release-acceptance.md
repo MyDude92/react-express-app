@@ -1,5 +1,22 @@
 # Release acceptance matrix
 
+## Evolving stage code handoff — 2026-09-15
+
+The workbench sends the exact submitted snapshot to the route. Evolving drafts
+remain available locally after saving/passing, and the next stage falls back to
+the previous local draft if the server has no draft. Existing next-stage local
+and account drafts retain priority. Inactive task cache entries are discarded
+rather than initializing the editor from a stale response.
+
+Six route regression checks cover JS/TS/React advancement, successful autosave,
+next-stage cache eviction, preservation of existing local/account drafts, and
+the FullStack API-to-React scaffold transition. These and nine workbench checks
+passed (15 tests). Production build, API/tooling types, launch contracts and both production
+dependency audits and diff checks passed (zero vulnerabilities). Responsive checking could not
+run because Chrome/Chromium is unavailable. Authenticated live cross-device
+advancement has not been verified. No layout, translations, schema or grading
+rules changed.
+
 ## Workbench layout, hints and calculator feedback repair — 2026-09-15
 
 The full-width brief now precedes a shared editor/results grid row. Both panes
