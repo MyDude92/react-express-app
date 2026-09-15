@@ -67,6 +67,20 @@ const readLayout = (): WorkbenchLayout => {
 };
 
 /** Prompt text with `code` spans rendered as code. */
+function Keycap({ name }: { name: 'control' | 'enter' | 'shift' | 'escape' | 'tab' }) {
+  const paths = {
+    control: 'M7 14l5-5 5 5',
+    enter: 'M17 7v7H7m4-4-4 4 4 4',
+    shift: 'M8 18v-6H5l7-7 7 7h-3v6Z',
+    escape: 'M16 8a6 6 0 1 1-8 8M7 7h6M7 7v6m0-6 7 7',
+    tab: 'M6 12h11m-4-4 4 4-4 4m5-9v10',
+  };
+  return <svg className="cd-keycap" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <rect x="1" y="1" width="22" height="22" rx="4" />
+    <path d={paths[name]} />
+  </svg>;
+}
+
 function Prompt({ text, className }: { text: string; className?: string }) {
   const parts = text.split('`');
   return (
@@ -831,7 +845,15 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                 <p id={`${baseId}-hint-note`} className="cd-shortcuts">
                   {!attemptReady && nextRung ? t('coding.hintLocked') : ''}
                 </p>
-                <p className="cd-shortcuts">{t('coding.shortcuts')}</p>
+                <div className="cd-shortcuts cd-keyboard-guide" role="img" aria-label={t('coding.shortcuts')}>
+                  <span className="cd-keyboard-guide__row" aria-hidden="true">
+                    <span className="cd-keyboard-guide__chord"><Keycap name="control" />+<Keycap name="enter" /> {t('coding.run')}</span>
+                    <span className="cd-keyboard-guide__chord"><Keycap name="control" />+<Keycap name="shift" />+<Keycap name="enter" /> {t('coding.submit')}</span>
+                  </span>
+                  <span className="cd-keyboard-guide__row" aria-hidden="true">
+                    <Keycap name="escape" /><span>→</span><Keycap name="tab" /><span>{t('coding.shortcuts.leave')}</span>
+                  </span>
+                </div>
               </div>
             </div>
             <div className="cd-hints" aria-label={t('coding.hint')}>

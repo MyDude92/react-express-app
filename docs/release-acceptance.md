@@ -1,5 +1,18 @@
 # Release acceptance matrix
 
+## Keyboard shortcut keycaps — 2026-09-15
+
+The right-aligned shortcut guide uses inline SVG keycaps for Control, Enter,
+Shift, Escape and Tab. Run and Submit chords share the first row; Escape then
+Tab occupies the second row. The SVGs are decorative and the group exposes the
+complete existing EN/CS instruction to assistive technology. The exit label is
+localized in both dictionaries. No keyboard handlers changed.
+
+Production build, API types, launch contracts, nine workbench tests, both
+production dependency audits (zero vulnerabilities), and diff checks passed.
+Responsive checking remains blocked by missing Chrome/Chromium; live visual
+verification remains outstanding.
+
 ## Compact failure feedback — 2026-09-15
 
 Automatic failure feedback (including “Nothing came back”) now sits below the

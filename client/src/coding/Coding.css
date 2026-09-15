@@ -605,3 +605,11 @@
 .cd-tag--format { border-color: var(--brand-accent); color: var(--brand-accent); }
 .cd-hint-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style-position: inside; }
 .cd-hint-list:empty { display: none; }
+
+/* Compact keyboard instructions: simultaneous chords, then the escape sequence. */
+.cd-keyboard-guide { display: grid; gap: 6px; }
+.cd-keyboard-guide__row, .cd-keyboard-guide__chord { display: flex; align-items: center; justify-content: flex-end; gap: 3px; white-space: nowrap; }
+.cd-keyboard-guide__row { gap: 6px; font-size: 0.72rem; }
+.cd-keycap { width: 18px; height: 18px; flex: none; overflow: visible; }
+.cd-keycap rect { fill: var(--color-background-muted); stroke: var(--color-border-strong); }
+.cd-keycap path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
