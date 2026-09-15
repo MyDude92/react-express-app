@@ -1,5 +1,17 @@
 # Release acceptance matrix
 
+## Five-row evolving challenge list — 2026-09-15
+
+Lists longer than five projects now scroll internally. A ResizeObserver measures
+the first five rows so the viewport follows translated text, zoom, font loading
+and narrow layouts. The named region is keyboard-focusable with a visible focus
+ring; native scrolling also brings tabbed Continue buttons into view. Shorter
+lists, including the three FullStack projects, retain their natural height.
+
+Production build, API typecheck, launch contracts, both production dependency
+audits (zero vulnerabilities), and diff checks passed. The local responsive
+command remains blocked by missing Chrome/Chromium.
+
 ## Coding discovery and production hover fix — 2026-09-15
 
 The live Continue button reproduced `:hover = true` with fin opacity still zero.

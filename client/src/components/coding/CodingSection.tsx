@@ -1,6 +1,6 @@
 // The Coding section: home, one track, one task, and the review queue.
 // devShark-only routes; the App gates them like /roadmap and /typing.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -148,12 +148,26 @@ function TaskRow({ task, status, saved, onSave, saving }: {
 function EvolvingGallery({ passed, fullstack = false }: { passed: ReadonlySet<string>; fullstack?: boolean }) {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
+  const listRef = useRef<HTMLDivElement>(null);
+  const challenges = EVOLVING_CHALLENGES.filter(challenge => (challenge.category === 'fullstack') === fullstack);
+  const scrollable = challenges.length > 5;
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || !scrollable) return;
+    const rows = Array.from(list.children).slice(0, 5);
+    // Measure actual rows so Czech text, zoom and narrow layouts still show five.
+    const sizeList = () => list.style.setProperty('--cd-project-list-height', `${rows.reduce((height, row) => height + row.getBoundingClientRect().height, 0) + 1}px`);
+    sizeList();
+    const observer = new ResizeObserver(sizeList);
+    rows.forEach(row => observer.observe(row));
+    return () => observer.disconnect();
+  }, [scrollable, fullstack]);
   return <section className="cd-projects" aria-labelledby={fullstack ? 'fullstack-title' : 'evolving-title'}>
     <div className="cd-projects__intro">
     <Kicker as="h2" id={fullstack ? 'fullstack-title' : 'evolving-title'}>{t(fullstack ? 'coding.evolving.fullstack' : 'coding.evolving.title')}</Kicker>
     <p className="cd-lead">{t(fullstack ? 'coding.evolving.fullstackBody' : 'coding.evolving.body')}</p>
     </div>
-    <div className="cd-project-list">{EVOLVING_CHALLENGES.filter(challenge => (challenge.category === 'fullstack') === fullstack).map((challenge, index) => {
+    <div ref={listRef} className={`cd-project-list${scrollable ? ' cd-project-list--scroll' : ''}`} tabIndex={scrollable ? 0 : undefined} role={scrollable ? 'region' : undefined} aria-label={scrollable ? t('coding.evolving.title') : undefined}>{challenges.map((challenge, index) => {
       const completed = challenge.stages.filter(id => passed.has(id)).length;
       return <article key={challenge.id} className="cd-project">
         <span className="cd-project__number" aria-hidden>{String(index + 1).padStart(2, '0')}</span>
