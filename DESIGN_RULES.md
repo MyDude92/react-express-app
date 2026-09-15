@@ -126,3 +126,27 @@ plain clickable cards; don't combine it with a fin-school hover.)
 - Paper grain + wave tile: the `--ss-grain` / `--ss-wave` data-URIs.
 - New copy becomes new keys in `i18n/translations.ts` (+ `.cs.ts`); never
   hard-code user-visible English in a component.
+
+## 8. Shared loading and motion vocabulary
+
+Extend the existing motion system, not a screen-specific animation library.
+Durations live in `astryx-theme.css`: `--ss-motion-feedback` (160ms),
+`--ss-motion-reveal` (350ms), `--ss-motion-ambient` (2400ms), and the two
+directional `--ss-motion-swim-*` tokens. Ambient keyframes live once in
+`app-shell.css`; components must not inject duplicate style tags.
+
+- Page/data loading uses `LoadingScreen`: branded swimming fin, visible
+  translated status, one polite live region. `QuoteLoader` is the study-mode
+  variation using the same fin. Never invent an unlabelled spinner or fake
+  percentage for an unknown duration.
+- In-place mutations keep their control visible, disable duplicate actions,
+  and use a translated action/status label. Do not replace a whole editor
+  with a page loader during submission or draft saving.
+- Use `SwimCta` for prominent actions outside the homepage too (coding Submit,
+  evolving Continue, collection practice). Use `FadeFinCta` for a quieter fin.
+  Keyboard focus gets the same affordance as hover; disabled actions do not
+  swim. Keep a native button and an accessible name.
+- Reduced motion freezes all travel and ambient loops; opacity alone may
+  reveal a fin. Feedback must remain understandable without animation.
+- Test narrow widths, both languages and themes, keyboard focus, disabled
+  controls, slow responses, failure/retry and reduced motion.

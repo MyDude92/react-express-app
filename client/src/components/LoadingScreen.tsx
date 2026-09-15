@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Text } from '@astryxdesign/core/Text';
-import { visuallyHidden } from '../theme/MuiTheme';
 import { SwimmingShark } from './SharkFin';
 import { sxToStyle, type SxLike } from '../lib/styleProps';
 
@@ -28,19 +27,6 @@ interface Props {
 // loads never flash a tip; short enough to read one on a slow load.
 const TIP_DELAY_MS = 2500;
 
-// Tip fade-in keyframes (previously an inline MUI `sx` `@keyframes`). Scoped
-// <style> so the animation travels with the component.
-const TIP_ANIM_CSS = `
-@keyframes devsharkTipIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.devshark-tip { animation: devsharkTipIn 400ms ease-out; }
-@media (prefers-reduced-motion: reduce) {
-  .devshark-tip { animation: none; }
-}
-`;
-
 /* ──── Study-mode loading beat (shared by Quiz, Learn, Challenge, Play) ────
  * Every question-fetching moment shows the house motto with the swimming fin
  * beneath, and holds for at least MIN_LOADING_MS so it reads as a beat, not a
@@ -65,7 +51,7 @@ export function QuoteLoader({ quote, label }: { quote: string; label: string }) 
         </Text>
       </div>
       <SwimmingShark size={44} />
-      <span style={visuallyHidden}>{label}</span>
+      <Text type="supporting" color="secondary">{label}</Text>
     </div>
   );
 }
@@ -98,7 +84,7 @@ export default function LoadingScreen({ label, size, sx, tips }: Props) {
       }}
     >
       <SwimmingShark size={size ?? 48} />
-      <span style={visuallyHidden}>{label}</span>
+      <Text type="supporting" color="secondary">{label}</Text>
       {tip && (
         <div
           // Decorative flourish — the status label above already conveys "loading",
@@ -113,7 +99,6 @@ export default function LoadingScreen({ label, size, sx, tips }: Props) {
             fontStyle: 'italic',
           }}
         >
-          <style>{TIP_ANIM_CSS}</style>
           <Text type="body" color="secondary">
             {tip}
           </Text>

@@ -86,7 +86,7 @@ function CardFace({
   );
 }
 
-export default function Cards() {
+export default function Cards({ embedded = false }: { embedded?: boolean }) {
   const { t, lang } = useLanguage();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const subject = useActiveSubject();
@@ -187,7 +187,7 @@ export default function Cards() {
     <VStack gap={0.5} width="100%">
       <Kicker>{t('cards.kicker')}</Kicker>
       <HStack gap={1} align="center" wrap="wrap">
-        <Heading level={1}>{t('cards.title')}</Heading>
+        <Heading level={embedded ? 2 : 1}>{t('cards.title')}</Heading>
         <SwimmingFin size={22} />
       </HStack>
       <Text type="supporting" color="secondary">{t('cards.subtitle')}</Text>

@@ -666,7 +666,7 @@ function Quiz({ onActiveChange }: { onActiveChange?: (active: boolean) => void }
             explanation,
           })
         : removeFlashcard(q.id);
-      op.catch(() => setSnack(t('card.syncFailed')));
+      op.then(() => queryClient.invalidateQueries({ queryKey: ['flashcards'] })).catch(() => setSnack(t('card.syncFailed')));
     }
   };
 

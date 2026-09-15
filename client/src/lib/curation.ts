@@ -126,8 +126,8 @@ export function coverageText(
   // the sentence says, and it does not say a person read them.
   if (claim === 'complete') {
     const copy = {
-      en: `Every one of the ${report.items} questions we can serve has a current review against the published criteria — an item-by-item model review with its code checks run. A person has not yet re-read them.`,
-      cs: `Všech ${report.items} otázek, které umíme nabídnout, má platnou kontrolu podle zveřejněných kritérií — položku po položce modelem umělé inteligence, včetně spuštění kódu. Člověk je zatím znovu nečetl.`,
+      en: `Every one of the ${report.items} questions we can serve has a current review against the published criteria — an item-by-item model review with its code checks run.`,
+      cs: `Všech ${report.items} otázek, které umíme nabídnout, má platnou kontrolu podle zveřejněných kritérií — položku po položce modelem umělé inteligence, včetně spuštění kódu.`,
     };
     return copy[lang] ?? copy.en;
   }

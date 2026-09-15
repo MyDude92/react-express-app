@@ -1,18 +1,21 @@
 // The Coding section: home, one track, one task, and the review queue.
 // devShark-only routes; the App gates them like /roadmap and /typing.
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useAuth } from '../../lib/auth';
 import { readString, removeStored, writeString } from '../../lib/storage';
 import { Kicker } from '../landing/LandingKit';
 import { WaterlineProgress } from '../SharkFin';
+import LoadingScreen from '../LoadingScreen';
 import { CodingWorkbench } from '../../coding/CodingWorkbench';
 import { DesignRunner } from '../../coding/DesignRunner';
 import { codingKeys, saveCodingDraft, useCodingProgress, useCodingTask } from '../../coding/api';
 import { useBookmarks, useSaveChallenge } from '../../coding/practice';
 import { CODING_INDEX } from '../../../../shared/coding-index';
+import { EVOLVING_CHALLENGES, evolvingResume, evolvingStage } from '../../../../shared/evolving';
+import { SwimCta } from '../landing/LandingKit';
 import {
   CODING_SECTION_TRACKS,
   CODING_TECHNIQUE_GROUPS,
@@ -39,7 +42,7 @@ const GROUPS = Object.keys(CODING_TECHNIQUE_GROUPS) as CodingTechniqueGroup[];
 // Everything the section offers. System design tasks stay in CODING_INDEX so a
 // passed one keeps its record and the FDE specialization can still assign it;
 // they simply never appear in discovery, counts, filters or the review queue.
-const SECTION_INDEX = CODING_INDEX.filter((task) => isCodingSectionTrack(task.track));
+const SECTION_INDEX = CODING_INDEX.filter((task) => isCodingSectionTrack(task.track) && !evolvingStage(task.id));
 
 /** Shown instead of a retired track's list or task. It explains where the
  * material went and links there — it never opens the exercise. */
@@ -123,9 +126,7 @@ function TaskRow({ task, status, saved, onSave, saving }: {
       <span className="cd-row__title">{task.title[lang] || task.title.en}</span>
       <span className="cd-row__meta">
         {task.level > 0 && <span>{t('coding.level', { n: task.level })}</span>}
-        <span>{t('coding.minutes', { n: task.estimatedMinutes })}</span>
         {formatOf(task) === 'debug' && <span className="cd-tag cd-tag--format">{t('coding.format.debug')}</span>}
-        {task.focus.slice(0, 3).map((tag) => <span key={tag} className="cd-tag">{tag}</span>)}
       </span>
       <StatusText status={status} />
     </>
@@ -144,6 +145,25 @@ function TaskRow({ task, status, saved, onSave, saving }: {
 }
 
 /* ── /coding ──────────────────────────────────────────────────────────── */
+function EvolvingGallery({ passed }: { passed: ReadonlySet<string> }) {
+  const { t, lang } = useLanguage();
+  const navigate = useNavigate();
+  return <section aria-labelledby="evolving-title">
+    <Kicker as="h2" id="evolving-title">{t('coding.evolving.title')}</Kicker>
+    <p className="cd-lead">{t('coding.evolving.body')}</p>
+    <div className="cd-tracks">{EVOLVING_CHALLENGES.map(challenge => {
+      const completed = challenge.stages.filter(id => passed.has(id)).length;
+      return <article key={challenge.id} className="cd-track">
+        <p>{t(`coding.track.${challenge.track}` as never)}</p>
+        <h3>{challenge.title[lang]}</h3>
+        <p>{t('coding.evolving.progress', { n: completed, total: challenge.stages.length })}</p>
+        <WaterlineProgress value={100 * completed / challenge.stages.length} label={challenge.title[lang]} />
+        <SwimCta dir={1} label={completed === challenge.stages.length ? t('coding.evolving.complete') : t('coding.continue')} onClick={() => navigate(`/coding/${challenge.track}/${evolvingResume(challenge, passed)}`)} />
+      </article>;
+    })}</div>
+  </section>;
+}
+
 export function CodingHome() {
   const { t, lang } = useLanguage();
   const { isAuthenticated } = useAuth();
@@ -183,6 +203,7 @@ export function CodingHome() {
           );
         })}
       </section>
+      <EvolvingGallery passed={passed} />
       {/* Ten technique groups, each one a row that says what it is rather than
           a pill that says only its name and a number. The tag count is the
           honest measure of breadth; the sentence is what makes the name mean
@@ -378,7 +399,7 @@ export function CodingTrackScreen() {
 
 /* ── /coding/:track/:taskId ──────────────────────────────────────────── */
 export function CodingTaskScreen() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { track: trackParam, taskId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -391,6 +412,9 @@ export function CodingTaskScreen() {
   const retired = track !== null && isRetiredSectionTrack(track);
   const task = useCodingTask(retired ? undefined : taskId);
   const [attempt, setAttempt] = useState(0);
+  const [draftState, setDraftState] = useState<'saved' | 'saving' | 'local' | null>(null);
+  const bookmarks = useBookmarks(isAuthenticated);
+  const save = useSaveChallenge();
 
   useEffect(() => {
     if (task.data && track && task.data.task.track !== track) navigate(`/coding/${task.data.task.track}/${task.data.task.id}`, { replace: true });
@@ -398,8 +422,14 @@ export function CodingTaskScreen() {
 
   const onDraft = useCallback((code: string) => {
     if (!taskId) return;
-    if (isAuthenticated) saveCodingDraft(taskId, code).catch(() => writeString(draftKey(taskId), code));
-    else writeString(draftKey(taskId), code);
+    writeString(draftKey(taskId), code);
+    if (isAuthenticated) {
+      setDraftState('saving');
+      saveCodingDraft(taskId, code).then(() => {
+        if (readString(draftKey(taskId)) === code) removeStored(draftKey(taskId));
+        setDraftState('saved');
+      }).catch(() => setDraftState('local'));
+    } else setDraftState('local');
   }, [taskId, isAuthenticated]);
 
   const onVerdict = useCallback((verdict: CodingVerdictResponse) => {
@@ -414,7 +444,7 @@ export function CodingTaskScreen() {
 
   if (retired && track) return <RetiredTrackNotice track={track} />;
   if (!track || !taskId) return <div className="cd-page"><p className="cd-note cd-note--error">{t('error.notFound')}</p></div>;
-  if (task.isLoading) return <div className="cd-page"><p className="cd-note" role="status">{t('coding.loading')}</p></div>;
+  if (task.isLoading) return <LoadingScreen label={t('coding.loading')} />;
   if (task.isError || !task.data) {
     return (
       <div className="cd-page">
@@ -427,16 +457,34 @@ export function CodingTaskScreen() {
     );
   }
   const data = task.data;
+  const stage = evolvingStage(data.task.id);
   if (isRetiredSectionTrack(data.task.track)) return <RetiredTrackNotice track={data.task.track} />;
   const trackTasks = SECTION_INDEX.filter((one) => one.track === data.task.track);
   const next = nextOpenTask(trackTasks, statusOf, data.task.id);
-  const nextHref = next && next.id !== data.task.id ? `/coding/${next.track}/${next.id}` : null;
+  const nextHref = stage
+    ? stage.next ? `/coding/${stage.challenge.track}/${stage.next}` : null
+    : next && next.id !== data.task.id ? `/coding/${next.track}/${next.id}` : null;
   const backHref = `/coding/${data.task.track}`;
   const localDraft = readString(draftKey(data.task.id));
-  const initialCode = data.draft ?? localDraft ?? null;
+  const initialCode = localDraft ?? data.draft ?? null;
 
   return (
     <div className="cd-page ss-pop">
+      <div className="cd-actions">
+        {draftState && <span role="status">{t(`coding.draft.${draftState}`)}</span>}
+        {stage && <span>{stage.challenge.title[lang]} — {t('coding.evolving.stage', { n: stage.index + 1, total: stage.challenge.stages.length })}</span>}
+        {isAuthenticated && <SaveButton taskId={data.task.id} saved={bookmarks.data?.saved.includes(data.task.id) ?? false} busy={bookmarks.isPending || bookmarks.isError || save.isPending} onToggle={saved => save.mutate({ op: 'save', taskId: data.task.id, saved })} />}
+      </div>
+      {(bookmarks.isError || save.isError) && <p role="alert" className="cd-note cd-note--error">{t('coding.collections.failed')} <button className="cd-btn" onClick={() => void bookmarks.refetch()}>{t('coding.retry')}</button></p>}
+      {stage && <nav className="cd-actions" aria-label={t('coding.evolving.title')}>
+        {stage.challenge.stages.map((id, index) => {
+          const available = index === 0 || stage.challenge.stages.slice(0, index).every(prior => progress.data?.tasks[prior]?.status === 'passed');
+          const label = t('coding.evolving.stage', { n: index + 1, total: stage.challenge.stages.length });
+          return available || id === data.task.id
+            ? <Link key={id} className="cd-btn" aria-current={id === data.task.id ? 'step' : undefined} to={`/coding/${data.task.track}/${id}`}>{progress.data?.tasks[id]?.status === 'passed' ? '✓ ' : ''}{label}</Link>
+            : <button key={id} className="cd-btn" disabled>{label}</button>;
+        })}
+      </nav>}
       {data.task.track === 'system-design'
         ? <DesignRunner key={`${data.task.id}-${attempt}`} task={data.task} session={data.session} locked={data.locked} signedIn={data.signedIn} mode="section" onVerdict={onVerdict} onRetry={onRetry} nextHref={nextHref} backHref={backHref} />
         : <CodingWorkbench key={`${data.task.id}-${attempt}`} task={data.task} session={data.session} locked={data.locked} signedIn={data.signedIn} initialCode={initialCode} mode="section" onDraft={onDraft} onVerdict={onVerdict} nextHref={nextHref} backHref={backHref} />}
@@ -446,23 +494,5 @@ export function CodingTaskScreen() {
 
 /* ── /coding/review ──────────────────────────────────────────────────── */
 export function CodingReviewScreen() {
-  const { t } = useLanguage();
-  const { isAuthenticated } = useAuth();
-  const progress = useCodingProgress(isAuthenticated);
-  const { statusOf } = useStatuses(progress.data);
-  const due = (progress.data?.due ?? []).map((id) => SECTION_INDEX.find((task) => task.id === id)).filter((task): task is CodingTaskSummary => Boolean(task));
-  return (
-    <div className="cd-page ss-pop">
-      <header>
-        <Kicker><Link className="cd-link" to="/coding">{t('coding.title')}</Link></Kicker>
-        <h1>{t('coding.review.title')}</h1>
-        <p className="cd-lead">{t('coding.review.subtitle')}</p>
-      </header>
-      {!isAuthenticated && <p className="cd-note">{t('coding.signInHint')}</p>}
-      {isAuthenticated && progress.isLoading && <p className="cd-note" role="status">{t('common.loading')}</p>}
-      {isAuthenticated && progress.isError && <p className="cd-note cd-note--error" role="alert">{t('coding.loadError')}</p>}
-      {isAuthenticated && progress.data && due.length === 0 && <p className="cd-note">{t('coding.review.empty')}</p>}
-      {due.length > 0 && <ul className="cd-rows">{due.map((task) => <TaskRow key={task.id} task={task} status={statusOf(task)} />)}</ul>}
-    </div>
-  );
+  return <Navigate to="/coding" replace />;
 }

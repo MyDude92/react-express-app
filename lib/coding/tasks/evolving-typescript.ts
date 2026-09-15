@@ -1,0 +1,64 @@
+import { text, test, type Spec } from './evolving';
+
+export const TYPESCRIPT_EVOLVING: Record<string, Spec> = {
+  'ts-evolving-result': {
+    focus: ['generics', 'unions'],
+    starter: 'type Result<T> = { ok: true; value: T } | { ok: false; error: string };\nfunction mapResult<T, U>(result: Result<T>, fn: (value: T) => U): Result<U> {\n  throw new Error("Implement me");\n}\n',
+    prompts: [
+      text('Define Result<T> as {ok:true,value:T} | {ok:false,error:string}. Implement generic mapResult(result, fn): transform success; preserve failure without calling fn. Keep precise result types. Callbacks in this stage do not throw.', 'Definuj Result<T> jako {ok:true,value:T} | {ok:false,error:string}. Napiš generickou mapResult(result, fn): transformuj úspěch; chybu zachovej bez volání fn. Zachovej přesné typy. Callbacky v této etapě nevyhazují výjimky.'),
+      text('Add flatMapResult<T,U>(result, fn) where fn returns Result<U>, without nesting results. Both mapResult and flatMapResult must now catch thrown values and return {ok:false,error:String(value)}. A thrown Error uses its message.', 'Přidej flatMapResult<T,U>(result, fn), kde fn vrací Result<U>, bez vnořování výsledků. mapResult i flatMapResult nyní zachytí vyhozené hodnoty a vrátí {ok:false,error:String(value)}. Pro Error použij jeho message.'),
+      text('Add collectResults<T>(results: readonly Result<T>[]): Result<T[]> and traverseResults<T,U>(values: readonly T[], fn:(value:T)=>Result<U>): Result<U[]>. Preserve order, stop at the first error, and never call later callbacks after failure. Catch callback throws as above. Empty inputs succeed with [].', 'Přidej collectResults<T>(results: readonly Result<T>[]): Result<T[]> a traverseResults<T,U>(values: readonly T[], fn:(value:T)=>Result<U>): Result<U[]>. Zachovej pořadí, zastav se na první chybě a další callbacky nevolej. Zachyť výjimky jako výše. Prázdný vstup uspěje s [].'),
+    ],
+    hints: [text('Narrow on ok before accessing value.', 'Před přístupem k value zuž typ pomocí ok.'), text('Wrap only callback execution; pass failure through untouched.', 'Obal provedení callbacku; chybový výsledek předej beze změny.'), text('Use a loop so failure can stop iteration immediately.', 'Použij cyklus, který lze při chybě okamžitě zastavit.')],
+    tests: [
+      [test('mapResult({ok:true,value:2}, n=>n*3)', {ok:true,value:6}), test('mapResult({ok:false,error:"bad"},()=>{throw "called"})', {ok:false,error:'bad'}), test('mapResult({ok:true,value:0},String)', {ok:true,value:'0'}), test('mapResult({ok:true,value:null},()=>false)', {ok:true,value:false})],
+      [test('flatMapResult({ok:true,value:2},n=>({ok:true,value:n+1}))', {ok:true,value:3}), test('flatMapResult({ok:true,value:2},()=>({ok:false,error:"no"}))', {ok:false,error:'no'}), test('mapResult({ok:true,value:1},()=>{throw new Error("bad")})', {ok:false,error:'bad'}), test('flatMapResult({ok:true,value:1},()=>{throw 7})', {ok:false,error:'7'})],
+      [test('collectResults([{ok:true,value:1},{ok:true,value:2}])', {ok:true,value:[1,2]}), test('collectResults([])', {ok:true,value:[]}), test('traverseResults([1,2],n=>({ok:true,value:n*2}))', {ok:true,value:[2,4]}), test('(()=>{const a=[];const r=traverseResults([1,2,3],n=>{a.push(n);return n===2?{ok:false,error:"stop"}:{ok:true,value:n}});return [r,a]})()', [{ok:false,error:'stop'},[1,2]])],
+    ],
+    typeTests: [
+      [{code:'const r: Result<string> = mapResult({ok:true,value:2}, n => n.toFixed());'}, {code:'mapResult({ok:true,value:2}, (n: string) => n);', rejects:true}],
+      [{code:'const r2: Result<number> = flatMapResult({ok:true,value:"a"}, s => ({ok:true,value:s.length}));'}, {code:'flatMapResult({ok:true,value:2}, n => n + 1);', rejects:true}],
+      [{code:'const r3: Result<number[]> = collectResults([{ok:true,value:1}] as const);'}, {code:'const r4: Result<number[]> = traverseResults(["a"] as const, s => ({ok:true,value:s.length}));'}],
+    ],
+  },
+  'ts-evolving-store': {
+    focus: ['generics', 'closures'],
+    starter: 'function createStore<T>(initial: T) {\n  return { get(): T { return initial; }, set(value: T): void {} };\n}\n',
+    prompts: [
+      text('Implement createStore<T>(initial). get():T returns the current state; set(value:T):void replaces it. Stores are independent and accept false, 0 and null without treating them as absent.', 'Napiš createStore<T>(initial). get():T vrátí aktuální stav; set(value:T):void ho nahradí. Stores jsou nezávislé a přijímají false, 0 a null jako běžné hodnoty.'),
+      text('Add update(fn:(value:T)=>T):void and subscribe(fn:(value:T)=>void):()=>void. Notify subscribers synchronously in registration order after each actual change (Object.is). Do not notify immediately on subscribe. Unsubscribe is idempotent. Iterate a snapshot of subscribers. Callbacks in these tests do not throw or update the store.', 'Přidej update(fn:(value:T)=>T):void a subscribe(fn:(value:T)=>void):()=>void. Po skutečné změně (Object.is) synchronně informuj odběratele v pořadí registrace. Při subscribe hned neinformuj. Odhlášení je idempotentní. Procházej snímek odběratelů. Callbacky testů nevyhazují výjimky ani nemění store.'),
+      text('Add undo():boolean and redo():boolean with unlimited in-memory history. A real set/update records the old value and clears redo history. Undo/redo notify subscribers once and return true; unavailable actions return false and do not notify. Setting an Object.is-equal value creates no history and does not clear redo.', 'Přidej undo():boolean a redo():boolean s neomezenou historií v paměti. Skutečné set/update uloží starou hodnotu a vymaže redo. Undo/redo jednou informují odběratele a vrací true; nedostupná akce vrátí false bez oznámení. Nastavení Object.is-shodné hodnoty netvoří historii ani nemaže redo.'),
+    ],
+    hints: [text('Keep state in the factory closure.', 'Udržuj stav v uzávěru tovární funkce.'), text('Route update through set to share equality checks and notification.', 'Veď update přes set pro společné porovnání a oznámení.'), text('Use past/future stacks; undo must not call set and erase future.', 'Použij zásobníky minulosti/budoucnosti; undo nesmí volat set a smazat budoucnost.')],
+    tests: [
+      [test('createStore(0).get()', 0), test('(()=>{const s=createStore(1);s.set(2);return s.get()})()', 2), test('(()=>{const a=createStore(1),b=createStore(2);a.set(3);return b.get()})()', 2), test('(()=>{const s=createStore(true);s.set(false);return s.get()})()', false)],
+      [test('(()=>{const s=createStore(1);s.update(n=>n+2);return s.get()})()', 3), test('(()=>{const s=createStore(1),a=[];s.subscribe(n=>a.push(n));s.set(1);s.set(2);return a})()', [2]), test('(()=>{const s=createStore(1),a=[];const off=s.subscribe(n=>a.push(n));off();off();s.set(2);return a})()', []), test('(()=>{const s=createStore(1),a=[];s.subscribe(()=>a.push(1));s.subscribe(()=>a.push(2));s.set(2);return a})()', [1,2])],
+      [test('(()=>{const s=createStore(0);s.set(1);s.set(2);s.undo();s.undo();return [s.get(),s.undo(),s.redo(),s.get()]})()', [0,false,true,1]), test('(()=>{const s=createStore(0);s.set(1);s.undo();s.set(2);return s.redo()})()', false), test('(()=>{const s=createStore(0),a=[];s.subscribe(n=>a.push(n));s.set(1);s.undo();s.redo();return a})()', [1,0,1]), test('(()=>{const s=createStore(0);s.set(1);s.undo();s.set(0);return [s.redo(),s.get()]})()', [true,1])],
+    ],
+    typeTests: [
+      [{code:'const n: number = createStore(1).get();'}, {code:'createStore(1).set("bad");',rejects:true}],
+      [{code:'createStore("a").update(s=>s.toUpperCase());'}, {code:'createStore(1).subscribe((s:string)=>{});',rejects:true}],
+      [{code:'const undone: boolean = createStore(1).undo();'}, {code:'const redone: boolean = createStore("a").redo();'}],
+    ],
+  },
+  'ts-evolving-schema': {
+    focus: ['generics', 'unions'],
+    starter: 'type Schema = "string" | "number" | "boolean";\nfunction validate(schema: Schema, value: unknown): string[] {\n  return [];\n}\n',
+    prompts: [
+      text('Implement validate(schema, value:unknown):string[]. Schema is "string" | "number" | "boolean". Valid values return []; mismatches return ["$: expected TYPE"]. A number must be finite (NaN/Infinity fail). Do not coerce values.', 'Napiš validate(schema, value:unknown):string[]. Schema je "string" | "number" | "boolean". Platné hodnoty vrací []; neshody ["$: expected TYPE"]. Číslo musí být konečné (NaN/Infinity neprojdou). Hodnoty nepřeváděj.'),
+      text('Extend Schema recursively with {object:Record<string,Schema>}. Require a non-null non-array object, otherwise return ["$: expected object"]. Every declared field is required; extra fields are allowed. Recursively collect all errors in schema key order with paths such as "$.user.age: expected number". Missing fields are validated as undefined.', 'Rozšiř Schema rekurzivně o {object:Record<string,Schema>}. Vyžaduj nenulový objekt mimo pole, jinak vrať ["$: expected object"]. Deklarovaná pole jsou povinná, další pole jsou povolená. Sbírej všechny chyby v pořadí klíčů schématu s cestami jako "$.user.age: expected number". Chybějící pole validuj jako undefined.'),
+      text('Extend Schema with {array:Schema} and {optional:Schema}. Arrays validate every element in index order using paths like "$[1]". Non-arrays produce "PATH: expected array". Optional accepts undefined, but not null unless its inner schema accepts null (none currently do). Support arbitrary nesting and keep all earlier behavior.', 'Rozšiř Schema o {array:Schema} a {optional:Schema}. Pole validují všechny prvky v pořadí indexů s cestami jako "$[1]". Jiný typ vrátí "PATH: expected array". Optional přijímá undefined, nikoli null, pokud ho vnitřní schéma nepřijímá (zatím žádné). Podporuj libovolné vnoření a zachovej dřívější chování.'),
+    ],
+    hints: [text('Use typeof plus Number.isFinite for numbers.', 'Použij typeof a pro čísla Number.isFinite.'), text('Pass the current path through a recursive helper.', 'Předávej aktuální cestu rekurzivní pomocné funkci.'), text('Handle optional before other branches; append an index only when traversing an array.', 'Optional zpracuj před ostatními větvemi; index připojuj jen při průchodu polem.')],
+    tests: [
+      [test('validate("string","a")', []), test('validate("number",0)', []), test('validate("boolean",0)', ['$: expected boolean']), test('validate("number",NaN)', ['$: expected number'])],
+      [test('validate({object:{name:"string"}},{name:"a",extra:1})', []), test('validate({object:{x:"number"}},{})', ['$.x: expected number']), test('validate({object:{user:{object:{age:"number"}}}},{user:{age:"x"}})', ['$.user.age: expected number']), test('validate({object:{}},[])', ['$: expected object'])],
+      [test('validate({array:"number"},[1,"x",false])', ['$[1]: expected number','$[2]: expected number']), test('validate({optional:"string"},undefined)', []), test('validate({optional:"string"},null)', ['$: expected string']), test('validate({object:{users:{array:{object:{age:"number",name:{optional:"string"}}}}}},{users:[{age:2},{age:"x",name:1}]})', ['$.users[1].age: expected number','$.users[1].name: expected string'])],
+    ],
+    typeTests: [
+      [{code:'const errors: string[] = validate("string", {} as unknown);'}, {code:'validate("date", "x");',rejects:true}],
+      [{code:'validate({object:{a:"number"}}, {});'}, {code:'validate({object:{a:"date"}}, {});',rejects:true}],
+      [{code:'validate({array:{optional:{object:{x:"boolean"}}}}, []);'}, {code:'validate({array:"date"}, []);',rejects:true}],
+    ],
+  },
+};

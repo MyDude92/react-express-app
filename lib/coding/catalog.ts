@@ -35,6 +35,9 @@ import { REACT_LOOP_TASKS } from './tasks/react-loops';
 import { REACT_LOOP_TASKS_CS } from './tasks/react-loops.cs';
 import { JAVASCRIPT_DEBUG_TASKS } from './tasks/javascript-debug';
 import { JAVASCRIPT_DEBUG_TASKS_CS } from './tasks/javascript-debug.cs';
+import { SPECS, buildEvolvingTasks } from './tasks/evolving';
+import { TYPESCRIPT_EVOLVING } from './tasks/evolving-typescript';
+import { REACT_EVOLVING } from './tasks/evolving-react';
 
 const sources: { tasks: CodingTaskSource[]; cs: Record<string, CodingTaskCs> }[] = [
   { tasks: JAVASCRIPT_TASKS, cs: JAVASCRIPT_TASKS_CS },
@@ -52,6 +55,7 @@ const sources: { tasks: CodingTaskSource[]; cs: Record<string, CodingTaskCs> }[]
 const TRACK_ORDER: Record<string, number> = { javascript: 0, typescript: 1, react: 2, 'system-design': 3 };
 export const CODING_TASKS: readonly CodingTask[] = sources
   .flatMap(({ tasks, cs }) => tasks.map((task, order) => ({ task: mergeTask(task, cs[task.id]), order })))
+  .concat(buildEvolvingTasks({ ...SPECS, ...TYPESCRIPT_EVOLVING, ...REACT_EVOLVING }).map((task, order) => ({ task, order })))
   .sort((a, b) => (TRACK_ORDER[a.task.track] - TRACK_ORDER[b.task.track]) || (a.task.level - b.task.level) || (a.task.tier - b.task.tier) || (a.order - b.order))
   .map(({ task }) => task);
 

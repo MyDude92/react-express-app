@@ -109,6 +109,7 @@ export function FadeFinCta({
     <button
       type="button" onClick={onClick} disabled={disabled}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)} onBlur={() => setHover(false)}
       style={{
         position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         // One longhand only. Pairing the `background` shorthand with a
@@ -144,6 +145,7 @@ export function SwimCta({ label, onClick, dir, disabled, size = 'md' }: { label:
     <button
       type="button" onClick={onClick} disabled={disabled}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)} onBlur={() => setHover(false)}
       style={{
         position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         background: 'var(--brand-accent)', color: 'var(--brand-on-accent)', border: 'none',
@@ -157,11 +159,11 @@ export function SwimCta({ label, onClick, dir, disabled, size = 'md' }: { label:
         aria-hidden
         style={{
           position: 'absolute', left: dir === 1 ? '0' : '100%', right: dir === -1 ? undefined : '100%',
-          bottom: -8, lineHeight: 0, opacity: active ? 1 : 0,
+          bottom: -9.5, lineHeight: 0, opacity: active ? 1 : 0,
           transform: reduce
             ? (dir === 1 ? 'scaleX(-1)' : 'none')
             : `translateX(${active ? dir * distance : 0}px)${dir === 1 ? ' scaleX(-1)' : ''}`,
-          transition: reduce ? 'none' : `transform ${dir === 1 ? 3.8 : 2.6}s ease-in-out, opacity 0.4s ease`, pointerEvents: 'none',
+          transition: reduce ? 'opacity var(--ss-motion-reveal) ease' : `transform var(${dir === 1 ? '--ss-motion-swim-forward' : '--ss-motion-swim-back'}) var(--ss-motion-ease), opacity var(--ss-motion-reveal) ease`, pointerEvents: 'none',
         }}
       >
         <Fin size={38} color="var(--brand-on-accent)" opacity={0.28} />

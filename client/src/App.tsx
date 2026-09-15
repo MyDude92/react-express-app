@@ -53,7 +53,7 @@ const CurationPage = lazy(() => import('./components/CurationPage').then((m) => 
 const ClassroomPage = lazy(() => import('./components/PublicInfoPages').then((m) => ({ default: m.ClassroomPage })));
 const TopicLandingPage = lazy(() => import('./components/TopicLandingPage'));
 const Today = lazy(() => import('./components/Today'));
-const SharkCards = lazy(() => import('./components/Cards'));
+const Collection = lazy(() => import('./components/Collection'));
 const TypingRacer = lazy(() => import('./components/TypingRacer'));
 const CodingHome = lazy(() => import('./components/coding/CodingSection').then((m) => ({ default: m.CodingHome })));
 const CodingTrackScreen = lazy(() => import('./components/coding/CodingSection').then((m) => ({ default: m.CodingTrackScreen })));
@@ -146,7 +146,7 @@ const NAV_ITEMS: {
   { to: '/challenge', key: 'nav.challenge', isActive: (p) => p.startsWith('/challenge') },
   { to: '/play', key: 'nav.play', isActive: (p) => p.startsWith('/play'), feature: 'multiplayer' },
   { to: '/leaderboard', key: 'nav.leaderboard', isActive: (p) => p === '/leaderboard', feature: 'leaderboard' },
-  { to: '/cards', key: 'nav.cards', isActive: (p) => p === '/cards', feature: 'flashcards' },
+  { to: '/collection', key: 'nav.cards', isActive: (p) => p === '/collection' || p === '/cards' },
   { to: '/shop', key: 'nav.shop', isActive: (p) => p === '/shop' },
   // Coding challenges and the developer career roadmap belong only to the
   // standalone devShark product.
@@ -692,7 +692,7 @@ function App() {
                 <Route path="/quiz" element={<Quiz onActiveChange={setQuizActive} />} />
                 <Route path="/learn" element={<Roadmap />} />
                 <Route path="/today" element={<Today />} />
-                <Route path="/collection" element={<SharkCards />} />
+                <Route path="/collection" element={<Collection />} />
                 <Route path="/typing" element={<TypingRacer />} />
                 <Route path="/roadmap" element={CURRENT_PRODUCT.id === 'devshark' ? <CareerRoadmap /> : <Navigate to="/learn" replace />} />
                 <Route path="/coding" element={CURRENT_PRODUCT.id === 'devshark' ? <CodingHome /> : <Navigate to="/learn" replace />} />

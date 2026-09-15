@@ -83,8 +83,9 @@ hint ladder is exhausted, and a reveal ends the current Learn level attempt.
 
 Learn levels of the `javascript`, `typescript`, and `react` topics carry one to
 three coding tasks sealed into the level session; completion requires a passed
-verdict for each. Passed tasks re-enter a review ladder (4 h, 24 h, 48 h; two
-clean passes retire the task) surfaced on Today and at `/coding/review`. Tiers
+verdict for each. Coding completion is permanent: the API ignores legacy review
+dates, returns an empty due queue, and never selects passed tasks for scheduled
+coding review. Question/concept review is unchanged. Tiers
 open in order (`tierUnlocked`), XP follows `CODING_TASK_XP` once per task, and
 the five coding badges join the shared badge sync for `webdev`. All storage is
 in `supabase/supabase-schema-025.sql`. devShark ships no AI feature; the last

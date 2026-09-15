@@ -10,6 +10,7 @@
 import type { FailureCategory } from './coding-failure';
 import type { PuzzleView } from './coding-puzzle';
 import type { PublicItemReview } from './curation';
+import { evolvingStage } from './evolving';
 
 export type CodingTrack = 'javascript' | 'typescript' | 'react' | 'system-design';
 export type CodingTier = 1 | 2 | 3 | 4 | 5;
@@ -282,7 +283,7 @@ export interface CodingLadderInput {
 }
 
 const tierPassRatio = (tier: CodingTier, input: CodingLadderInput): number => {
-  const inTier = input.tasks.filter((task) => task.track === input.track && task.tier === tier);
+  const inTier = input.tasks.filter((task) => !evolvingStage(task.id) && task.track === input.track && task.tier === tier);
   if (inTier.length === 0) return 0;
   const passed = inTier.filter((task) => input.progress.passed.has(task.id)).length;
   return passed / inTier.length;

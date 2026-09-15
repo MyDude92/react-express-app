@@ -30,6 +30,7 @@ import { IconTile, BookmarkIcon, CheckCircleIcon } from './ui/icons';
 import { SwimCta } from './landing/LandingKit';
 import './DeepEndScreens.css';
 import { useActiveSubject } from '../lib/subjects';
+import { removeBookmark } from '../lib/bookmarks';
 
 
 const TrashIcon = () => (
@@ -40,7 +41,7 @@ const TrashIcon = () => (
   </svg>
 );
 
-function Flashcards() {
+function Flashcards({ embedded = false }: { embedded?: boolean }) {
   const t = useT();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading, signInWithGoogle } = useAuth();
@@ -63,6 +64,7 @@ function Flashcards() {
   // Remove a card with an optimistic cache update, rolling back on failure.
   const removeMut = useMutation({
     mutationFn: removeFlashcard,
+    onSuccess: (_data, id) => removeBookmark(id),
     onMutate: async (qid: string) => {
       await queryClient.cancelQueries({ queryKey: flashcardsKey });
       const prev = queryClient.getQueryData<Flashcard[]>(flashcardsKey);
@@ -132,7 +134,7 @@ function Flashcards() {
         <HStack justify="between" align="end" gap={2} width="100%" wrap="wrap">
           <VStack gap={0.5}>
             <Kicker>{t('card.kicker')}</Kicker>
-            <Heading level={1}>{t('card.heading')}</Heading>
+            <Heading level={embedded ? 2 : 1}>{t(embedded ? 'collection.questions' : 'card.heading')}</Heading>
             <Text type="supporting" color="secondary">{t('card.subtitle')}</Text>
           </VStack>
           <SwimCta label={t('card.practiceAll', { count: cards.length })} dir={-1} onClick={() => {

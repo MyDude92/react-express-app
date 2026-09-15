@@ -3,7 +3,7 @@
 // level (`mode="lesson"`). It never fetches on its own: the parent hands it a
 // playable task, its sealed session and the saved draft.
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import { Kicker } from '../components/landing/LandingKit';
+import { Kicker, SwimCta } from '../components/landing/LandingKit';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { readJSON, writeJSON } from '../lib/storage';
@@ -14,6 +14,7 @@ import { runCodeTests, runPassed, type RunOutcome, type RunPhase } from './runne
 import { HARNESS_URL, useReactHarness, type HarnessRun } from './useReactHarness';
 import { attemptStarted, canGiveUp, giveUpAfter, ladderRungs, type LadderRung } from './hint-ladder';
 import { taskResources } from '../../../shared/coding-docs';
+import { evolvingStage } from '../../../shared/evolving';
 import { skipTask } from './practice';
 import { TermsBar } from '../components/ui/Terms';
 import { ReportDialog } from '../components/ReportDialog';
@@ -88,16 +89,9 @@ function useOnline(): boolean {
   return online;
 }
 
-function relativeTime(iso: string, lang: string): string {
-  const diffMs = Date.parse(iso) - Date.now();
-  const hours = Math.round(diffMs / 3_600_000);
-  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
-  if (Math.abs(hours) < 48) return rtf.format(hours, 'hour');
-  return rtf.format(Math.round(hours / 24), 'day');
-}
-
 export function CodingWorkbench(props: CodingWorkbenchProps) {
   const { task, session, locked, signedIn, initialCode, mode, onDraft, onVerdict, onRevealed, nextHref, backHref, onContinue } = props;
+  const evolution = evolvingStage(task.id);
   const { t, lang } = useLanguage();
   const [reportOpen, setReportOpen] = useState(false);
   const L = useCallback((value: Localized | undefined): string => (value ? value[lang] || value.en : ''), [lang]);
@@ -110,6 +104,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
 
   const [code, setCode] = useState<string>(initialCode ?? task.starter);
   const [formattedCode, setFormattedCode] = useState<string>(task.starter);
+  const [formatSource, setFormatSource] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
   const [runPhase, setRunPhase] = useState<RunPhase | null>(null);
   const [run, setRun] = useState<RunOutcome | null>(null);
@@ -146,6 +141,28 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
 
   // Draft: hand the code to the parent after the learner stops typing.
   const firstRender = useRef(true);
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(() => {
+      if (!code.trim()) { setFormattedCode(code); setFormatSource(code); return; }
+      void formatCode(code, task.track === 'system-design' ? 'javascript' : task.track).then(formatted => {
+        if (active) { setFormattedCode(formatted); setFormatSource(code); }
+      }).catch(() => {
+        if (active) { setFormattedCode(code); setFormatSource(code); }
+      });
+    }, 350);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [code, task.track]);
+  const draftLatest = useRef({ code, onDraft, dirty: false });
+  draftLatest.current = { code, onDraft, dirty: draftLatest.current.dirty || code !== (initialCode ?? task.starter) };
+  useEffect(() => {
+    const flush = () => {
+      const latest = draftLatest.current;
+      if (latest.dirty) latest.onDraft?.(latest.code);
+    };
+    window.addEventListener('pagehide', flush);
+    return () => { window.removeEventListener('pagehide', flush); flush(); };
+  }, []);
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
     const timer = window.setTimeout(() => onDraft?.(code), DRAFT_DEBOUNCE_MS);
@@ -281,7 +298,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
   const format = useCallback(async () => {
     try {
       const formatted = await formatCode(code, task.track === 'system-design' ? 'javascript' : task.track);
-      setCode(formatted);
+      setCode(current => current === code ? formatted : current);
       setFormattedCode(formatted);
       setFormatError(null);
     } catch (error) {
@@ -360,7 +377,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
 
   const busy = phase !== 'idle';
   const submitDisabled = busy || !session || !online || Boolean(solution);
-  const formatDisabled = busy || code === formattedCode;
+  const formatDisabled = busy || !code.trim() || formatSource !== code || code === formattedCode;
   const resetDisabled = busy || (code === task.starter && taken === 0);
   const tierLabel = t(`coding.tier.${CODING_TIERS[task.tier]}` as never);
   const trackLabel = t(`coding.track.${task.track}` as never);
@@ -620,7 +637,6 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
       ) : (
         verdict.verdict === 'passed' && verdict.progress && <p className="cd-verdict__row">{verdict.firstPass ? t('coding.verdict.firstPass') : t('coding.verdict.again')}</p>
       )}
-      {verdict.verdict === 'passed' && verdict.progress?.nextReviewAt && <p className="cd-verdict__row">{t('coding.verdict.review', { when: relativeTime(verdict.progress.nextReviewAt, lang) })}</p>}
       {verdict.verdict === 'passed' && !verdict.progress && <p className="cd-verdict__row">{signedIn ? t('coding.verdict.notRecorded') : t('coding.verdict.signIn')}</p>}
       {verdict.github && verdict.github.status !== 'not_connected' && (
         <p className="cd-verdict__row">
@@ -664,7 +680,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
           <section className="cd-pane cd-pane--task" aria-labelledby={`${baseId}-title`}>
             <div className="cd-pane__head">
-              <Kicker>{trackLabel} · {tierLabel}{task.level > 0 ? ` · ${t('coding.level', { n: task.level })}` : ''}</Kicker>
+              <Kicker>{evolution ? t('coding.evolving.stage', { n: evolution.index + 1, total: evolution.challenge.stages.length }) : <>{trackLabel} · {tierLabel}{task.level > 0 ? ` · ${t('coding.level', { n: task.level })}` : ''}</>}</Kicker>
               <h2 id={`${baseId}-title`}>{L(task.title)}</h2>
               {formatOf(task) === 'debug' && (
                 <div className="cd-pane__meta">
@@ -814,9 +830,7 @@ export function CodingWorkbench(props: CodingWorkbenchProps) {
                 <button type="button" className="cd-btn" onClick={() => void runLocal()} disabled={busy}>
                   {phase === 'running' ? (runPhase === 'compiling' ? t('coding.compiling') : t('coding.running')) : t('coding.run')}
                 </button>
-                <button type="button" className="cd-btn cd-btn--primary" onClick={() => void submit()} disabled={submitDisabled}>
-                  {phase === 'submitting' ? t('coding.submitting') : t('coding.submit')}
-                </button>
+                <SwimCta dir={1} onClick={() => void submit()} disabled={submitDisabled} label={phase === 'submitting' ? t('coding.submitting') : t('coding.submit')} />
                 <button type="button" className="cd-btn cd-btn--quiet" onClick={() => void format()} disabled={formatDisabled}>{t('coding.format')}</button>
                 <button type="button" className="cd-btn cd-btn--quiet" onClick={() => setConfirming('reset')} disabled={resetDisabled}>{t('coding.reset')}</button>
               </div>

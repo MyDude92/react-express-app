@@ -9,8 +9,11 @@ import { JAVASCRIPT_LOOP_SOLUTIONS } from './javascript-loops';
 import { TYPESCRIPT_LOOP_SOLUTIONS } from './typescript-loops';
 import { REACT_LOOP_SOLUTIONS } from './react-loops';
 import { JAVASCRIPT_DEBUG_SOLUTIONS } from './javascript-debug';
+import { EVOLVING_SOLUTIONS } from './evolving';
+import { REACT_EVOLVING_SOLUTIONS } from './evolving-react';
 
 const ALL: Record<string, CodingSolution> = {
+  ...EVOLVING_SOLUTIONS, ...REACT_EVOLVING_SOLUTIONS,
   ...JAVASCRIPT_SOLUTIONS, ...JAVASCRIPT_LOOP_SOLUTIONS, ...JAVASCRIPT_DEBUG_SOLUTIONS,
   ...TYPESCRIPT_SOLUTIONS, ...TYPESCRIPT_LOOP_SOLUTIONS,
   ...REACT_SOLUTIONS, ...REACT_LOOP_SOLUTIONS,

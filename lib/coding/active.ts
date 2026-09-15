@@ -19,6 +19,7 @@ import type { EligibilityReason } from '../../shared/curation';
 import { codingTaskEligibility } from '../curation';
 import { CODING_TASKS, levelTaskQuota, summarize } from './catalog';
 import { solutionFor } from './solutions';
+import { evolvingStage } from '../../shared/evolving';
 
 const verdicts = CODING_TASKS.map((task) => ({ task, eligibility: codingTaskEligibility(task, solutionFor(task.id)) }));
 
@@ -54,6 +55,7 @@ export function tasksForLevel(topic: CodingTask['topic'], level: number): Coding
   return ACTIVE_CODING_TASKS.filter(
     (task) =>
       task.topic === topic &&
+      !evolvingStage(task.id) &&
       task.level === level &&
       task.verify !== 'checklist' &&
       formatOf(task) !== 'debug',

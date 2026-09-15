@@ -24,6 +24,7 @@ import { codeOutcome, giveUpAfter, gradeDesign, ladderLength, prepareDesign } fr
 import { classifyFailure, failureHint, jsonKind } from '../../shared/coding-failure';
 import { afterCodingPass } from '../github-garden';
 import { approachesFor } from './approaches';
+import { evolvingStage, evolvingUnlocked } from '../../shared/evolving';
 import { puzzleFor } from './puzzles';
 import { isAcceptedOrder, isCompleteOrder, PUZZLE_MAX_LINES } from '../../shared/coding-puzzle';
 import {
@@ -73,7 +74,8 @@ const toProgress = (row: ProgressRow): CodingTaskProgress => ({
   status: row.status,
   passes: Number(row.passes ?? 0),
   reviewStage: Number(row.review_stage ?? 0),
-  nextReviewAt: row.next_review_at ?? null,
+  // Completion is permanent. Legacy scheduling columns are no longer read.
+  nextReviewAt: null,
   revealCount: Number(row.reveal_count ?? 0),
   bestPassedAt: row.best_passed_at ?? null,
 });
@@ -156,6 +158,15 @@ export async function handleCodingTask(req: VercelRequest, res: VercelResponse, 
       progress = mine ? toProgress(mine) : null;
       draft = typeof draftRow.data?.code === 'string' ? draftRow.data.code : null;
       locked = tierLockReason({ track: task.track, tier: task.tier, progress: { passed }, tasks: CODING_SUMMARIES, javascriptLevelsCleared: cleared });
+      const stage = evolvingStage(task.id);
+      if (stage) {
+        locked = evolvingUnlocked(task.id, passed) ? null : 'evolving';
+        if (draft === null && stage.previous && !locked) {
+          const previous = await withTimeout(supabase.from('coding_drafts').select('code').eq('user_id', userId).eq('task_id', stage.previous).maybeSingle());
+          if (previous.error) throw new Error('db_error');
+          draft = typeof previous.data?.code === 'string' ? previous.data.code : null;
+        }
+      }
     } catch {
       return jsonError(res, 500, 'db_error', 'Could not load coding progress');
     }
@@ -164,6 +175,7 @@ export async function handleCodingTask(req: VercelRequest, res: VercelResponse, 
     // signed-in learner could otherwise record. Everything above tier 2 is
     // shown as locked so the ladder reads the same way for everyone.
     locked = tierLockReason({ track: task.track, tier: task.tier, progress: { passed: new Set() }, tasks: CODING_SUMMARIES, javascriptLevelsCleared: 0 });
+    if (evolvingStage(task.id)) locked = evolvingUnlocked(task.id, new Set()) ? null : 'evolving';
   }
 
   const play = playable(task);
@@ -499,6 +511,17 @@ export async function handleCodingSubmit(req: VercelRequest, res: VercelResponse
   let github: CodingGardenStatus | null = null;
   if (userId) {
     if (!supabase) return jsonError(res, 503, 'not_configured', 'Coding progress is not configured');
+    if (evolvingStage(task.id)) {
+      const rows = await loadProgressRows(supabase, userId);
+      const passed = new Set(rows.filter(row => row.status === 'passed').map(row => row.task_id));
+      if (!evolvingUnlocked(task.id, passed)) return jsonError(res, 403, 'stage_locked', 'Complete earlier stages first');
+      // Persist the exact submitted code before publishing completion. A next
+      // stage can then resume from this draft even on another device.
+      if (code !== null) {
+        const draft = await withTimeout(supabase.rpc('save_coding_draft', { p_user_id: userId, p_task_id: task.id, p_code: code }));
+        if (draft.error) return jsonError(res, 500, 'db_error', 'Could not save stage code');
+      }
+    }
     recorded = await recordVerdict({ supabase, userId, task, session, verdict: graded.verdict, verified: true, code, runCount: body.runCount, hintsUsed: body.hintsUsed, durationMs: body.durationMs }, res);
     if (!recorded) return;
     if (graded.verdict === 'passed' && recorded.applied) {
@@ -570,17 +593,13 @@ export async function handleCodingProgress(req: VercelRequest, res: VercelRespon
   if (!userId) return;
   try {
     const [rows, cleared] = await Promise.all([loadProgressRows(supabase, userId), javascriptLevelsCleared(supabase, userId)]);
-    const now = Date.now();
     const tasks: Record<string, CodingTaskProgress> = {};
     const passedByTrack = Object.fromEntries(TRACKS.map((track) => [track, 0])) as Record<CodingTrack, number>;
     for (const row of rows) {
       tasks[row.task_id] = toProgress(row);
       if (row.status === 'passed' && TRACKS.includes(row.track as CodingTrack)) passedByTrack[row.track as CodingTrack] += 1;
     }
-    const due = rows
-      .filter((row) => row.status === 'passed' && row.next_review_at && Date.parse(row.next_review_at) <= now)
-      .sort((a, b) => Date.parse(a.next_review_at!) - Date.parse(b.next_review_at!))
-      .map((row) => row.task_id);
+    const due: string[] = [];
     res.setHeader('Cache-Control', 'private, no-store');
     const out: CodingProgressResponse = { tasks, due, javascriptLevelsCleared: cleared, passedByTrack };
     return res.json(out);

@@ -20,6 +20,7 @@ import { isRpcMissing, jsonError, createLogger, requireAuthSub, withTimeout } fr
 import { enforceRateLimit, RATE_LIMITS } from '../rate-limit';
 import { deploymentSubjectIds } from '../product-scope';
 import { CODING_SUMMARIES } from './active';
+import { evolvingStage } from '../../shared/evolving';
 import { isCodingSectionTrack, isCodingTaskId, tierUnlocked, type CodingTaskSummary } from '../../shared/coding-catalog';
 import {
   isPracticeSessionMinutes,
@@ -52,15 +53,15 @@ const SECTION_TASKS: CodingTaskSummary[] = CODING_SUMMARIES.filter((task) => isC
 
 /* ── saved challenges and collections ─────────────────────────────────── */
 
-async function readBookmarks(supabase: SupabaseClient, userId: string): Promise<CodingBookmarksResponse | 'missing'> {
+async function readBookmarks(supabase: SupabaseClient, userId: string): Promise<CodingBookmarksResponse | 'missing' | 'error'> {
   const saved = await withTimeout(
     supabase.from('coding_bookmarks').select('task_id').eq('user_id', userId).order('created_at', { ascending: false }),
   );
-  if (saved.error) return isRpcMissing(saved.error) ? 'missing' : { saved: [], collections: [] };
+  if (saved.error) return isRpcMissing(saved.error) ? 'missing' : 'error';
   const collections = await withTimeout(
     supabase.from('coding_collections').select('collection_id,name,position').eq('user_id', userId).order('position'),
   );
-  if (collections.error) return { saved: (saved.data ?? []).map((row) => String(row.task_id)), collections: [] };
+  if (collections.error) return isRpcMissing(collections.error) ? 'missing' : 'error';
   const ids = (collections.data ?? []).map((row) => String(row.collection_id));
   const items = ids.length
     ? await withTimeout(
@@ -68,6 +69,7 @@ async function readBookmarks(supabase: SupabaseClient, userId: string): Promise<
       )
     : { data: [], error: null };
   const byCollection = new Map<string, string[]>();
+  if (items.error) return 'error';
   for (const row of (items.data ?? []) as { collection_id: string; task_id: string }[]) {
     const list = byCollection.get(row.collection_id) ?? [];
     list.push(String(row.task_id));
@@ -94,6 +96,7 @@ export async function handleCodingBookmarks(req: VercelRequest, res: VercelRespo
   if (req.method === 'GET') {
     const body = await readBookmarks(supabase, userId);
     if (body === 'missing') return migrationRequired(res);
+    if (body === 'error') return jsonError(res, 500, 'db_error', 'Could not load saved challenges');
     res.setHeader('Cache-Control', 'private, no-store');
     return res.json(body);
   }
@@ -104,7 +107,7 @@ export async function handleCodingBookmarks(req: VercelRequest, res: VercelRespo
 
     if (body.op === 'save') {
       const taskId = body.taskId;
-      if (!isCodingTaskId(taskId) || !SECTION_TASKS.some((task) => task.id === taskId)) {
+      if (!isCodingTaskId(taskId) || (body.saved === true && !SECTION_TASKS.some((task) => task.id === taskId))) {
         return jsonError(res, 400, 'bad_request', 'Unknown challenge');
       }
       const saved = await withTimeout(
@@ -179,6 +182,7 @@ export async function handleCodingBookmarks(req: VercelRequest, res: VercelRespo
 
     const body2 = await readBookmarks(supabase, userId);
     if (body2 === 'missing') return migrationRequired(res);
+    if (body2 === 'error') return jsonError(res, 500, 'db_error', 'Could not reload saved challenges');
     res.setHeader('Cache-Control', 'private, no-store');
     return res.json(body2);
   }
@@ -233,6 +237,7 @@ export async function handleCodingSkip(req: VercelRequest, res: VercelResponse, 
   const passed = await passedTaskIds(supabase, userId);
   const next = SECTION_TASKS.find((one) =>
     one.id !== task.id
+    && !evolvingStage(one.id)
     && one.track === task.track
     && !passed.has(one.id)
     && tierUnlocked({ track: one.track, tier: one.tier, progress: { passed }, tasks: SECTION_TASKS, javascriptLevelsCleared: 0 }),
@@ -245,7 +250,7 @@ export async function handleCodingSkip(req: VercelRequest, res: VercelResponse, 
     next: next?.id ?? null,
     // Every task in a Learn level's coding phase is required by that level, so
     // a skip postpones it rather than clearing it. Section tasks are optional.
-    required: task.level > 0,
+    required: task.level > 0 && !evolvingStage(task.id),
   };
   return res.json(answer);
 }
@@ -283,6 +288,7 @@ function buildQueue(input: {
   due: Set<string>;
 }): string[] {
   const eligible = SECTION_TASKS.filter((task) =>
+    !evolvingStage(task.id) &&
     (!input.topic || task.track === input.topic)
     && tierUnlocked({
       track: task.track, tier: task.tier, progress: { passed: input.passed },
@@ -335,15 +341,7 @@ export async function handlePracticeSession(req: VercelRequest, res: VercelRespo
     const topic = typeof body.topic === 'string' && isCodingSectionTrack(body.topic) ? body.topic : null;
 
     const passed = await passedTaskIds(supabase, userId);
-    const dueRows = await withTimeout(
-      supabase.from('coding_progress').select('task_id,next_review_at').eq('user_id', userId).not('next_review_at', 'is', null),
-    );
-    const now = Date.now();
-    const due = new Set(
-      (dueRows.data ?? [])
-        .filter((row) => Date.parse(String(row.next_review_at)) <= now)
-        .map((row) => String(row.task_id)),
-    );
+    const due = new Set<string>();
 
     const queue = buildQueue({ minutes: body.minutes, topic, passed, due });
     if (queue.length === 0) {
