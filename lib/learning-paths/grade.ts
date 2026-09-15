@@ -1,3 +1,4 @@
+import type { ReactSuiteOutcome } from '../coding/react-runner';
 /** Grading for learning-path activities.
  *
  * Nothing new executes here. Code runs in the same QuickJS sandbox, through
@@ -218,6 +219,7 @@ export async function gradePathCode(
   activity: MergedActivity,
   code: MergedCode,
   submitted: string,
+  reactRunner?: (input: {suite:string;appSource:string}) => Promise<ReactSuiteOutcome>,
 ): Promise<PathCodeGrade> {
   const solution: PathCodeSolution | undefined = solutionFor(activity.id);
   const visible: MergedCallTest[] = code.tests;
@@ -230,7 +232,7 @@ export async function gradePathCode(
   }));
 
   if (code.language === 'react') {
-    return gradeReactActivity(code, submitted);
+    return gradeReactActivity(code, submitted, reactRunner);
   }
 
   let check: TypeCheckResult | null = null;
@@ -299,8 +301,8 @@ export async function gradePathCode(
   };
 }
 
-async function gradeReactActivity(code: MergedCode, submitted: string): Promise<PathCodeGrade> {
-  const { runReactSuite } = await import('../coding/react-runner');
+async function gradeReactActivity(code: MergedCode, submitted: string, runner?: (input: {suite:string;appSource:string}) => Promise<ReactSuiteOutcome>): Promise<PathCodeGrade> {
+  const runReactSuite = runner ?? (await import('../coding/react-isolated')).runIsolatedReactSuite;
   let run;
   try {
     run = await runReactSuite({ suite: code.suite ?? '', appSource: submitted });

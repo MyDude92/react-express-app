@@ -313,10 +313,10 @@ async function gradeReact(task: CodingTask, code: string): Promise<Graded> {
   if (task.verify === 'checklist' || !task.suite) {
     return { verdict: 'passed', results: [], hidden: null, check: null, logs: [], codeError: null, design: null, designReference: null };
   }
-  const { runReactSuite } = await import('./react-runner');
+  const { runIsolatedReactSuite } = await import('./react-isolated');
   let run;
   try {
-    run = await runReactSuite({ suite: task.suite, appSource: code });
+    run = await runIsolatedReactSuite({ suite: task.suite, appSource: code });
   } catch (error) {
     // The runtime itself could not start; that is ours, not the learner's.
     logEvent({ status: 500, kind: 'react_runtime', reason: error instanceof Error ? error.message : 'unknown' });
@@ -390,7 +390,7 @@ async function recordVerdict(input: RecordInput, res: VercelResponse): Promise<R
   // still recorded, only unlinked.
   let roadmapAttemptId: string | null = null;
   if (session.roadmapAttemptId) {
-    const attempt = await withTimeout(supabase.from('roadmap_attempts').select('attempt_id').eq('attempt_id', session.roadmapAttemptId).maybeSingle());
+    const attempt = await withTimeout(supabase.from('roadmap_attempts').select('attempt_id').eq('attempt_id', session.roadmapAttemptId).eq('user_id', userId).maybeSingle());
     if (!attempt.error && attempt.data) roadmapAttemptId = session.roadmapAttemptId;
   }
   const saved = await withTimeout(
@@ -461,6 +461,7 @@ export async function handleCodingSubmit(req: VercelRequest, res: VercelResponse
   if (!task || task.track !== session.track) return jsonError(res, 400, 'invalid_session', 'Coding session does not match a task');
   const userId = await optionalUser(req, res);
   if (userId === undefined) return;
+  if (session.userId && session.userId !== userId) return jsonError(res, 403, 'invalid_session', 'Coding session belongs to another account');
 
   let graded: Graded;
   let code: string | null = null;
@@ -556,6 +557,7 @@ export async function handleCodingReveal(req: VercelRequest, res: VercelResponse
   const hintsUsed = clampInt(body.hintsUsed, 20) ?? 0;
   const userId = await optionalUser(req, res);
   if (userId === undefined) return;
+  if (session.userId && session.userId !== userId) return jsonError(res, 403, 'invalid_session', 'Coding session belongs to another account');
 
   let progress: CodingTaskProgress | null = null;
   if (userId && supabase) {

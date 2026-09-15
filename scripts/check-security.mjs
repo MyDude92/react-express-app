@@ -19,6 +19,8 @@ assert(header(sandbox, 'Content-Security-Policy').includes("frame-ancestors 'sel
 const sandboxCsp = header(sandbox, 'Content-Security-Policy');
 const connectionPolicy = sandboxCsp.split(';').map(part => part.trim()).find(part => part.startsWith('connect-src '));
 assert.equal(connectionPolicy || sandboxCsp.split(';').map(part => part.trim()).find(part => part.startsWith('default-src ')), connectionPolicy ? "connect-src 'none'" : "default-src 'none'", 'Exercise frames must not make network requests');
+assert(sandboxCsp.includes("form-action 'none'"), 'Native form events must never enable form navigation');
+assert(readFileSync('client/sandbox/index.html', 'utf8').includes("form-action 'none'"), 'Local preview must also block form navigation');
 assert(!header(sandbox, 'X-Frame-Options'), 'Do not deny the exercise frame');
 console.log('Security policy contracts passed: main app, theme bootstrap, isolated coding frame.');
 const url = process.argv.find(arg => arg.startsWith('--url='))?.slice(6);

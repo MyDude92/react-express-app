@@ -36,7 +36,7 @@ export function submitCoding(input: CodingSubmitRequest): Promise<CodingVerdictR
   return apiFetch<CodingVerdictResponse>(`${ROADMAP}?resource=coding-submit`, {
     method: 'POST',
     body: JSON.stringify({ ...input, lang: getStoredLang() }),
-    timeoutMs: 30_000,
+    timeoutMs: 50_000,
   });
 }
 

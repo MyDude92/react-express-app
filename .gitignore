@@ -26,3 +26,4 @@ client/storybook-static/
 artifacts/
 playwright-report/
 test-results/
+lib/coding/generated/

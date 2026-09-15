@@ -69,7 +69,7 @@ const DRIVER = `<!doctype html>
   window.__origins = [];
   try { localStorage.setItem('driver-secret', 'parent-only'); } catch (e) {}
   var frame = document.createElement('iframe');
-  frame.setAttribute('sandbox', 'allow-scripts');
+  frame.setAttribute('sandbox', 'allow-scripts allow-forms');
   frame.src = '/sandbox/index.html';
   frame.style.width = '480px';
   frame.style.height = '320px';
@@ -388,6 +388,19 @@ async function main(): Promise<void> {
     const afterLog = await settled(afterToken);
     const afterDone = afterLog.find((one) => one.type === 'done') as { failed: number; passed: number } | undefined;
     check(!!afterDone && afterDone.failed === 0 && afterDone.passed > 0, 'the frame did not recover after a superseded run');
+
+    // Every authored React stage uses the actual browser sandbox, in catalogue
+    // order and without reloading the frame between runs. This catches missing
+    // browser APIs and leaked state that a jsdom-only content check cannot see.
+    for (const candidate of CODING_TASKS.filter(task => task.track === 'react' && task.suite)) {
+      await reset();
+      const token = `catalog-${candidate.id}`;
+      await send({type:'run',token,files:{'/App.js':solutionFor(candidate.id)!.solution,'/App.test.js':candidate.suite},preview:true,tests:true});
+      const entries = await settled(token);
+      const result = entries.find(entry => entry.type === 'done' && entry.token === token) as {passed:number;failed:number;total:number}|undefined;
+      const errors = entries.filter(entry => entry.type === 'compile-error' || entry.type === 'preview-error' || (entry.type === 'test' && entry.status === 'fail'));
+      check(Boolean(result && result.total > 0 && result.failed === 0 && errors.length === 0), `${candidate.id}: ${JSON.stringify(errors).slice(0,1500)}`);
+    }
   } finally {
     cleanup();
   }

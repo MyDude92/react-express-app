@@ -175,6 +175,9 @@ export default defineConfig(({ mode }) => {
         ]
       : []),
   ],
+  // The React iframe has an opaque origin; preview must serve its public
+  // module assets to Origin:null, just as the production /sandbox headers do.
+  preview: { cors: { origin: 'null' } },
   server: {
     port: 3000,
     // For local dev, run `vercel dev` from the repo root which serves the

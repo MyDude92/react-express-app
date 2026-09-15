@@ -215,7 +215,7 @@ CSP: the document keeps `script-src 'self' 'unsafe-inline'`. The worker needs `n
 
 ### 5.3 React harness
 
-A self-hosted page, `client/sandbox/index.html`, built as a second Vite entry and served from `/sandbox/`. It bundles React 19, `react-dom/client`, `@testing-library/react`, `@testing-library/dom`, a jest-style `describe/it/expect` shim with `@testing-library/jest-dom` matchers, and sucrase for JSX. The workbench loads it in one `<iframe sandbox="allow-scripts">` (opaque origin, no access to the parent's storage or Supabase session). `vercel.json` gives `/sandbox/(.*)` a `script-src 'self' 'unsafe-eval' 'unsafe-inline'` header and `frame-ancestors 'self'`.
+A self-hosted page, `client/sandbox/index.html`, built as a second Vite entry and served from `/sandbox/`. It bundles React 19, `react-dom/client`, `@testing-library/react`, `@testing-library/dom`, a jest-style `describe/it/expect` shim with `@testing-library/jest-dom` matchers, and sucrase for JSX. The workbench loads it in one `<iframe sandbox="allow-scripts allow-forms">` (opaque origin, no access to the parent's storage or Supabase session). `vercel.json` gives `/sandbox/(.*)` a `script-src 'self' 'unsafe-eval' 'unsafe-inline'` header and `frame-ancestors 'self'`.
 
 Protocol: the parent posts `{ type: 'run', token, files }`; the harness answers `ready`, `compiled | compile-error`, `test`, and `done` with the same `token`. One iframe serves both the preview and the tests, so there is one client state to reason about. The Sandpack failure class in section 6 cannot occur: there is no hidden "done" gate, no second client, and no listener that outlives its target. Timeout handling reloads the iframe with a new token.
 
@@ -415,3 +415,5 @@ Issues #106 to #117 are implemented on `claude/interview-prepper-integration-ogh
 - The roadmap structure annotates code levels with `codingTasks` counts, and the level map shows a marker; Today lists due coding reviews for signed-in devShark learners.
 - The import script reads the Firestore export only and never awards XP or schedules reviews for imported passes.
 - Sandpack is gone: the React harness is `client/sandbox/` with sucrase and a small Jest-compatible runner, so the "tests do not run until refresh" defect cannot recur.
+
+Native form events are permitted inside the opaque-origin frame. Its CSP sets `form-action 'none'` (including a development meta policy), so forms cannot send data or navigate.
